@@ -1,5 +1,5 @@
-#include "arm_state.h"
 #include <string.h>
+#include "arm_state.h"
 
 void initialize_arm_state(ARMState* state) {
     // Set all registers to 0

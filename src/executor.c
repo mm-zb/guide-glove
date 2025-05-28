@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// TODO:
 void execute_instruction(ARMState* state, uint32_t instruction_word) {
-    // This is a temporary stub. Prasanna and Zayan will implement actual execution logic
+    // Prasanna and Zayan will implement actual execution logic
     // For now it only handles the halt instruction and increments PC
     // Debugging: fprintf(stderr, "Stub: Executing instruction 0x%08x at PC 0x%llx\n", instruction_word, state->pc);
 
     // Halt instruction (0x8a000000) check
-    if (instruction_word == 0x8a000000) {
+    if (instruction_word == HALT_INSTRUCTION) {
         fprintf(stderr, "Halt instruction (0x8a000000) encountered. Terminating emulator.\n");
         // The main loop will handle printing final state after this.
         return; // Signal to main loop to stop

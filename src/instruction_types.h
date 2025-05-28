@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+// TODO:
 // Richard will define structures for decoded instructions here, e.g.:
 // typedef struct {
 //     uint32_t raw_instruction;

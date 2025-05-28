@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include "arm_state.h"
 #include "decoder.h"
 #include "executor.h"
-#include <inttypes.h>
+#include "constants.h"
 
 void load_binary_to_memory(const char* filename, ARMState* state);
 void print_final_state(ARMState* state, FILE* output_file);
@@ -34,20 +35,21 @@ int main(int argc, char **argv) {
         uint32_t instruction_word = read_word_from_memory(&arm_state, arm_state.pc);
 
         // Halt condition
-        if (instruction_word == 0x8a000000) {
+        if (instruction_word == HALT_INSTRUCTION) {
             // Executor stub handles logging halt message
             // PC will be updated to next instruction if we don't break immediately
             // For emulator we want to print state before the PC increments past halt
             break;
         }
-
-        //uint32_t decoded_instr_stub = decode_instruction(instruction_word); // Richard's job
+ 
+        // TODO: uint32_t decoded_instr_stub = decode_instruction(instruction_word); // Richard's job
         (void)decode_instruction(instruction_word); //Temporary compilation fix for unused variable
-        execute_instruction(&arm_state, instruction_word); // Prasanna/Zayan's job
+        // TODO: Prasanna/Zayan's job
+        execute_instruction(&arm_state, instruction_word);
 
         // The execute_instruction stub currently increments PC.
-        // Later, actual branch instructions in execute_instruction will modify PC
-        // Non-branch instructions will be handled by a default PC increment here
+        // TODO:  Later, actual branch instructions in execute_instruction will modify PC
+        // TODO: Non-branch instructions will be handled by a default PC increment here
         // For now the stub executor already does it
     }
     fprintf(stderr, "Emulation finished.\n");
@@ -89,7 +91,7 @@ void print_final_state(ARMState* state, FILE* output_file) {
     for (int i = 0; i < 31; ++i) {
         fprintf(output_file, "X%02d = %016"PRIx64"\n", i, state->registers[i]);
     }
-    fprintf(output_file, "PC = %016"PRIx64"\n", state->pc); // Use %llx for uint64_t
+    fprintf(output_file, "PC = %016"PRIx64"\n", state->pc);
     fprintf(output_file, "PSTATE : %c%c%c%c\n",
             state->pstate.N ? 'N' : '-',
             state->pstate.Z ? 'Z' : '-',

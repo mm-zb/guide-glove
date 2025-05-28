@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
-
-#define MEMORY_SIZE (2 * 1024 * 1024) // 2MB
+#include "constants.h"
 
 // ARMv8 machine state
 typedef struct {
