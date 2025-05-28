@@ -7,7 +7,7 @@
 
 #define MEMORY_SIZE (2 * 1024 * 1024) // 2MB
 
-// Define the ARMv8 machine state
+// ARMv8 machine state
 typedef struct {
     uint64_t registers[31]; // X0-X30 general-purpose registers
     uint64_t pc;            // Program Counter
