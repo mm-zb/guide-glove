@@ -5,6 +5,9 @@
 #include "decoder.h"
 #include "executor.h"
 
+void load_binary_to_memory(const char* filename, ARMState* state);
+void print_final_state(ARMState* state, FILE* output_file);
+
 int main(int argc, char **argv) {
     if (argc < 2 || argc > 3) {
         fprintf(stderr, "Usage: %s <file_in> [file_out]\n", argv[0]);
