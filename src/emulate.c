@@ -4,6 +4,7 @@
 #include "arm_state.h"
 #include "decoder.h"
 #include "executor.h"
+#include <inttypes.h>
 
 void load_binary_to_memory(const char* filename, ARMState* state);
 void print_final_state(ARMState* state, FILE* output_file);
@@ -40,7 +41,8 @@ int main(int argc, char **argv) {
             break;
         }
 
-        uint32_t decoded_instr_stub = decode_instruction(instruction_word); // Richard's job
+        //uint32_t decoded_instr_stub = decode_instruction(instruction_word); // Richard's job
+        (void)decode_instruction(instruction_word); //Temporary compilation fix for unused variable
         execute_instruction(&arm_state, instruction_word); // Prasanna/Zayan's job
 
         // The execute_instruction stub currently increments PC.
@@ -85,9 +87,9 @@ void load_binary_to_memory(const char* filename, ARMState* state) {
 void print_final_state(ARMState* state, FILE* output_file) {
     fprintf(output_file, "Registers:\n");
     for (int i = 0; i < 31; ++i) {
-        fprintf(output_file, "X%02d = %016llx\n", i, state->registers[i]);
+        fprintf(output_file, "X%02d = %016"PRIx64"\n", i, state->registers[i]);
     }
-    fprintf(output_file, "PC = %016llx\n", state->pc); // Use %llx for uint64_t
+    fprintf(output_file, "PC = %016"PRIx64"\n", state->pc); // Use %llx for uint64_t
     fprintf(output_file, "PSTATE : %c%c%c%c\n",
             state->pstate.N ? 'N' : '-',
             state->pstate.Z ? 'Z' : '-',
