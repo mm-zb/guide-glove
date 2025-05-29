@@ -11,6 +11,6 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction 
 // Branch instructions prototypes
 void execute_branch_unconditional(ARMState* state, int64_t simm26);
 void execute_branch_register(ARMState* state, uint8_t register_xn);
-void execute_branch_cond(ARMState* state, uint64_t simm19, uint8_t cond);
+void execute_branch_cond(ARMState* state, int64_t simm19, uint8_t cond);
 
 #endif
