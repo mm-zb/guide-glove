@@ -2,11 +2,11 @@
 #define DECODER_H
 
 #include <stdint.h>
-#include "arm_state.h" // For PSTATE flags, if needed by helper functions
-#include "instruction_types.h" // If DecodedInstruction is defined
+#include "arm_state.h"
+#include "instruction_types.h"
 
-// For now it can return a simple representation or just be void/uint32_t
-// TODO: Richard will refine this return type to a comprehensive struct
-uint32_t decode_instruction(uint32_t instruction_word);
+DecodedInstruction decode_instruction(uint32_t instruction_word);
+uint32_t get_bits(uint32_t value, uint8_t start, uint8_t end);
+InstructionType get_instruction_type(uint32_t instruction_word);
 
 #endif
