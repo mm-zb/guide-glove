@@ -30,3 +30,47 @@ void execute_branch_register(ARMState* state, uint8_t register_xn) {
     next_pc = register_data;
     state->pc = next_pc;
 }
+
+// If cond then PC = PC + 4 * simm19
+void execute_branch_cond(ARMState* state, int64_t simm19, uint8_t cond) {
+    const EQ = 0x0;
+    const NE = 0x1;
+    const GE = 0xA;
+    const LT = 0xB;
+    const GT = 0xC;
+    const LE = 0xD;
+    const AL = 0xE;
+
+    // Breaking out of the switch statement is the same as branching
+    // Returning is the same as leaving the PC unchanged
+    switch (cond) {
+        case EQ:
+            // (state->pstate.Z) ? break : return;
+            // TODO: Change these if statements for one-liners somehow (as above)
+            if (state->pstate.Z) break;
+            return;
+        case NE:
+            if (!state->pstate.Z) break;
+            return;
+        case GE:
+            if (state->pstate.N == state->pstate.V) break;
+            return;
+        case LT:
+            if (state->pstate.N != state->pstate.V) break;
+            return;
+        case GT:
+            if (state->pstate.Z==0 && state->pstate.N == state->pstate.V) break;
+            return;
+        case LE:
+            if (!(state->pstate.Z==0 && state->pstate.N == state->pstate.V)) break;
+            return;
+        case AL:
+            break;
+        default:
+            // Invalid condition code
+            // For now I will leave the PC unchanged
+            return;
+    }
+
+    execute_branch_unconditional(state, simm19);
+}
