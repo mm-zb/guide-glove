@@ -66,7 +66,7 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
 }
 
 uint32_t get_bits(uint32_t value, uint8_t start, uint8_t end) {
-    // Extract bits from start to end index (inclusive)
+    // Extract bits from start index to end index (inclusive)
     return (value >> start) & ((1U << (end - start + 1)) - 1);
 }
 
@@ -77,6 +77,11 @@ InstructionType get_instruction_type(uint32_t instruction_word) {
     uint32_t op0 = get_bits(instruction_word, 25, 28);
 
     // Mask out don't care bits and compare against given patterns
+    // op0:     Group:
+    // 100x    Data Processing (Immediate)
+    // x101    Data Processing (Register)
+    // x1x0    Loads and Stores
+    // 101x    Branches
     if ((op0 & 0b1110) == 0b1000) {
         return DP_IMM;
     } else if ((op0 & 0b0111) == 0b0101) {
