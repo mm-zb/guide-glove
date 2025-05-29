@@ -5,8 +5,8 @@
 #include "instruction_types.h" // If DecodedInstruction is defined
 
 // Load & Store instruction prototypes
-void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction instruction);
-void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction instruction);
+void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction* instruction);
+void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction* instruction);
 
 // Branch instructions prototypes
 void execute_branch_unconditional(ARMState* state, int64_t simm26);
