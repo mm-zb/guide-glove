@@ -37,7 +37,7 @@ typedef struct {
     uint16_t offset;   // Structure depends on U and bit 21
     uint8_t xn;        // Base register
     uint8_t rt;        // Target register
-    int32_t simm19;    // Literal offset
+    int64_t simm19;    // Literal offset (sign-extended to 64 bits)
 
 } DecodedInstruction;
 
