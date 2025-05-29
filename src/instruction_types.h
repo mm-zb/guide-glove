@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+typedef struct {
+
+} DecodedInstruction;
+// Added this template to allow compilation of mem_branch_executor
+
 // TODO:
 // Richard will define structures for decoded instructions here, e.g.:
 // typedef struct {
