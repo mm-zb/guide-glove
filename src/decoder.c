@@ -1,6 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "decoder.h"
+
+uint32_t get_bits(uint32_t value, uint8_t start, uint8_t end);
+InstructionType get_instruction_type(uint32_t instruction_word);
 
 DecodedInstruction decode_instruction(uint32_t instruction_word) {
     DecodedInstruction i;
@@ -39,7 +43,7 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
         }
         case LL: {
             i.sf = get_bits(instruction_word, 30, 30);
-            // sign extend to 64
+            // Sign extend to 64 bits
             i.simm19 = ((int64_t)get_bits(instruction_word, 5, 21) << 13) >> 13;
             i.rt = get_bits(instruction_word, 0, 4);
             break;
@@ -61,7 +65,7 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
     return i;
 }
 
-uint32_t get_bits(uint32_t value, int start, int end) {
+uint32_t get_bits(uint32_t value, uint8_t start, uint8_t end) {
     // Extract bits from start to end index (inclusive)
     return (value >> start) & ((1U << (end - start + 1)) - 1);
 }
@@ -79,7 +83,7 @@ InstructionType get_instruction_type(uint32_t instruction_word) {
         return DP_REG;
     } else if ((op0 & 0b0101) == 0b0100) {
         // SDT/LL share the same op0 pattern, use the MSB to differentiate
-        return (instruction_word & (1 << 31)) ? SDT : LL; 
+        return (instruction_word & (1 << 31)) ? SDT : LL;
     } else if ((op0 & 0b1110) == 0b1010) {
         return BRANCH;
     } else {
