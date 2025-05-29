@@ -13,59 +13,59 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
     i.raw_instruction = instruction_word;
     i.type = get_instruction_type(instruction_word);
 
+    // Populate the appropriate fields based on the instruction type
     switch (i.type) {
         case DP_IMM: {
             i.sf = get_bits(instruction_word, 31, 31);
-            i.opc = get_bits(instruction_word, 29, 30);
-            i.opi = get_bits(instruction_word, 23, 25);
-            i.operand = get_bits(instruction_word, 5, 22);
-            i.rd = get_bits(instruction_word, 0, 4);
+            i.dp_opc = get_bits(instruction_word, 29, 30);
+            i.dp_imm_opi = get_bits(instruction_word, 23, 25);
+            i.dp_rd = get_bits(instruction_word, 0, 4);
 
-            if (i.opi == 0x2) {  // Arithmetic operation
-                i.sh = get_bits(instruction_word, 22, 22);
-                i.imm12 = get_bits(instruction_word, 10, 21);
-                i.rn = get_bits(instruction_word, 5, 9);
-            } else if (i.opi == 0x5) {  // Wide move
-                i.hw = get_bits(instruction_word, 21, 22);
-                i.imm16 = get_bits(instruction_word, 5, 20);
+            if (i.dp_imm_opi == 0x2) {  // Arithmetic operation
+                i.dp_imm_sh = get_bits(instruction_word, 22, 22);
+                i.dp_imm_imm12 = get_bits(instruction_word, 10, 21);
+                i.dp_rn = get_bits(instruction_word, 5, 9);
+            } else if (i.dp_imm_opi == 0x5) {  // Wide move
+                i.dp_imm_hw = get_bits(instruction_word, 21, 22);
+                i.dp_imm_imm16 = get_bits(instruction_word, 5, 20);
             }
 
             break;
         }
         case DP_REG: {
             i.sf = get_bits(instruction_word, 31, 31);
-            i.opc = get_bits(instruction_word, 29, 30);
-            i.M = get_bits(instruction_word, 28, 28);
-            i.opr = get_bits(instruction_word, 21, 24);
-            i.rm = get_bits(instruction_word, 16, 20);
-            i.operand = get_bits(instruction_word, 10, 15);
-            i.rn = get_bits(instruction_word, 5, 9);
-            i.rd = get_bits(instruction_word, 0, 4);
+            i.dp_opc = get_bits(instruction_word, 29, 30);
+            i.dp_reg_M = get_bits(instruction_word, 28, 28);
+            i.dp_reg_opr = get_bits(instruction_word, 21, 24);
+            i.dp_reg_rm = get_bits(instruction_word, 16, 20);
+            i.dp_reg_shift_amount = get_bits(instruction_word, 10, 15);
+            i.dp_rn = get_bits(instruction_word, 5, 9);
+            i.dp_rd = get_bits(instruction_word, 0, 4);
 
-            if (i.M) {  // Multiply operation
-                i.x = get_bits(instruction_word, 15, 15);
-                i.ra = get_bits(instruction_word, 10, 14);
+            if (i.dp_reg_M) {  // Multiply operation
+                i.dp_reg_x = get_bits(instruction_word, 15, 15);
+                i.dp_reg_ra = get_bits(instruction_word, 10, 14);
             } else {  // Arithmetic or Logical operation
-                i.shift = get_bits(instruction_word, 22, 23);
-                i.N = get_bits(instruction_word, 21, 21);
+                i.dp_reg_shift_type = get_bits(instruction_word, 22, 23);
+                i.dp_reg_N = get_bits(instruction_word, 21, 21);
             }
 
             break;
         }
         case SDT: {
             i.sf = get_bits(instruction_word, 30, 30);
-            i.U = get_bits(instruction_word, 24, 24);
-            i.L = get_bits(instruction_word, 22, 22);
-            i.xn = get_bits(instruction_word, 5, 9);
-            i.rt = get_bits(instruction_word, 0, 4);
+            i.sdt_U = get_bits(instruction_word, 24, 24);
+            i.sdt_L = get_bits(instruction_word, 22, 22);
+            i.sdt_xn = get_bits(instruction_word, 5, 9);
+            i.sdt_ll_rt = get_bits(instruction_word, 0, 4);
 
-            if (i.U) {  // Unsigned offset
-                i.imm12 = get_bits(instruction_word, 10, 21);
+            if (i.sdt_U) {  // Unsigned offset
+                i.sdt_imm12 = get_bits(instruction_word, 10, 21);
             } else if (get_bits(instruction_word, 10, 10)) {  // Pre/Post-indexing
-                i.I = get_bits(instruction_word, 11, 11);
-                i.simm9 = get_bits(instruction_word, 12, 20);
+                i.sdt_I = get_bits(instruction_word, 11, 11);
+                i.sdt_simm9 = get_bits(instruction_word, 12, 20);
             } else {  // Register offset
-                i.xm = get_bits(instruction_word, 16, 20);
+                i.sdt_xm = get_bits(instruction_word, 16, 20);
             }
 
             break;
@@ -73,8 +73,8 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
         case LL: {
             i.sf = get_bits(instruction_word, 30, 30);
             // Sign-extend to 64 bits
-            i.simm19 = ((int64_t)(get_bits(instruction_word, 5, 23) << 13)) >> 13;
-            i.rt = get_bits(instruction_word, 0, 4);
+            i.ll_simm19 = ((int64_t)(get_bits(instruction_word, 5, 23) << 13)) >> 13;
+            i.sdt_ll_rt = get_bits(instruction_word, 0, 4);
             break;
         }
         case BRANCH: {
