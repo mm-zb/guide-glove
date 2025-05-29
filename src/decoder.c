@@ -1,6 +1,6 @@
-#include "decoder.h"
-
 #include <stdio.h>
+
+#include "decoder.h"
 
 DecodedInstruction decode_instruction(uint32_t instruction_word) {
     DecodedInstruction i;
