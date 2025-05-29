@@ -60,13 +60,17 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
             i.sdt_xn = get_bits(instruction_word, 5, 9);
             i.sdt_ll_rt = get_bits(instruction_word, 0, 4);
 
+            // Determine the type of offset based on the instruction format
+            // U == 1: Unsigned offset
+            // U == 0 and bit 21 is 1: Register offset
+            // U == 0 and bit 21 is 0: Pre/Post-indexing
             if (i.sdt_U) {  // Unsigned offset
                 i.sdt_imm12 = get_bits(instruction_word, 10, 21);
-            } else if (get_bits(instruction_word, 10, 10)) {  // Pre/Post-indexing
-                i.sdt_I = get_bits(instruction_word, 11, 11);
-                i.sdt_simm9 = sign_extend(get_bits(instruction_word, 12, 20), 9);
-            } else {  // Register offset
+            } else if (get_bits(instruction_word, 21, 21)) {  // Register offset
                 i.sdt_xm = get_bits(instruction_word, 16, 20);
+            } else {  // Pre/Post-indexing
+                i.sdt_simm9 = sign_extend(get_bits(instruction_word, 12, 20), 9);
+                i.sdt_I = get_bits(instruction_word, 11, 11);
             }
 
             break;
