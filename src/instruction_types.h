@@ -55,16 +55,16 @@ typedef struct {
     uint8_t sdt_xn;      // Base register
     uint8_t sdt_xm;      // Offset register
     uint8_t sdt_I;       // Post/Pre-indexing (0: post-index, 1: pre-index)
-    int16_t sdt_simm9;   // Signed immediate offset (sign-extended to 64 bits)
+    int64_t sdt_simm9;   // Signed immediate offset (sign-extended to 64 bits)
     uint16_t sdt_imm12;  // Immediate value for unsigned offset (U == 1)
 
     // LL specific
     int64_t ll_simm19;  // Literal offset (sign-extended to 64 bits)
 
     // BRANCH specific
-    int32_t b_simm26;  // Signed immediate offset (sign-extended to 64 bits)
+    int64_t b_simm26;  // Signed immediate offset (sign-extended to 64 bits)
     uint8_t b_xn;      // Destination address register (11111: ZR)
-    int32_t b_simm19;  // Signed immediate offset for conditional jump (sign-extended to 64 bits)
+    int64_t b_simm19;  // Signed immediate offset for conditional jump (sign-extended to 64 bits)
     uint8_t b_cond;    // Condition
 
 } DecodedInstruction;

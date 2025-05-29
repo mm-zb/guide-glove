@@ -5,6 +5,7 @@
 
 uint32_t get_bits(uint32_t value, uint8_t start, uint8_t end);
 InstructionType get_instruction_type(uint32_t instruction_word);
+int64_t sign_extend(uint32_t value, uint8_t bits);
 
 DecodedInstruction decode_instruction(uint32_t instruction_word) {
     DecodedInstruction i;
@@ -63,7 +64,7 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
                 i.sdt_imm12 = get_bits(instruction_word, 10, 21);
             } else if (get_bits(instruction_word, 10, 10)) {  // Pre/Post-indexing
                 i.sdt_I = get_bits(instruction_word, 11, 11);
-                i.sdt_simm9 = get_bits(instruction_word, 12, 20);
+                i.sdt_simm9 = sign_extend(get_bits(instruction_word, 12, 20), 9);
             } else {  // Register offset
                 i.sdt_xm = get_bits(instruction_word, 16, 20);
             }
@@ -73,12 +74,32 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
         case LL: {
             i.sf = get_bits(instruction_word, 30, 30);
             // Sign-extend to 64 bits
-            i.ll_simm19 = ((int64_t)(get_bits(instruction_word, 5, 23) << 13)) >> 13;
+            i.ll_simm19 = sign_extend(get_bits(instruction_word, 5, 23), 19);
             i.sdt_ll_rt = get_bits(instruction_word, 0, 4);
             break;
         }
         case BRANCH: {
-            i.operand = get_bits(instruction_word, 0, 25);
+            // Compare the two most significant bits to determine the branch type
+            switch (get_bits(instruction_word, 30, 31)) {
+                case 0: {  // Unconditional branch (00)
+                    i.b_simm26 = sign_extend(get_bits(instruction_word, 0, 25), 26);
+                    i.b_xn = get_bits(instruction_word, 5, 9);
+                    break;
+                }
+                case 3: {  // Register branch (11)
+                    i.b_xn = get_bits(instruction_word, 5, 9);
+                    break;
+                }
+                case 1: {  // Conditional branch (01)
+                    i.b_cond = get_bits(instruction_word, 0, 3);
+                    i.b_simm19 = sign_extend(get_bits(instruction_word, 5, 23), 19);
+                    break;
+                }
+                default: {
+                    fprintf(stderr, "Error: Invalid branch instruction format\n");
+                    break;
+                }
+            }
             break;
         }
         case HALT:
@@ -122,5 +143,16 @@ InstructionType get_instruction_type(uint32_t instruction_word) {
         return BRANCH;
     } else {
         return UNKNOWN;
+    }
+}
+
+int64_t sign_extend(uint32_t value, uint8_t bits) {
+    // Sign-extend the first `bits` bits of `value` to 64b
+    if (value & (1U << (bits - 1))) {
+        // If the sign bit is set, extend the sign
+        return value | ((int64_t)-1 << bits);
+    } else {
+        // If the sign bit is not set, just return the value
+        return value;
     }
 }
