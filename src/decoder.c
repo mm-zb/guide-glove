@@ -14,7 +14,7 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
             i.sf = get_bits(instruction_word, 31, 31);
             i.opc = get_bits(instruction_word, 29, 30);
             i.opi = get_bits(instruction_word, 23, 25);
-            i.operand = get_bits(instruction_word, 10, 21);
+            i.operand = get_bits(instruction_word, 5, 21);
             i.rd = get_bits(instruction_word, 0, 4);
             break;
         }
