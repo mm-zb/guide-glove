@@ -73,7 +73,7 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
         case LL: {
             i.sf = get_bits(instruction_word, 30, 30);
             // Sign-extend to 64 bits
-            i.simm19 = ((int64_t)(get_bits(instruction_word, 5, 23) << 13)) >> 13;  
+            i.simm19 = ((int64_t)(get_bits(instruction_word, 5, 23) << 13)) >> 13;
             i.rt = get_bits(instruction_word, 0, 4);
             break;
         }
