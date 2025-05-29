@@ -21,11 +21,11 @@ DecodedInstruction decode_instruction(uint32_t instruction_word) {
             i.operand = get_bits(instruction_word, 5, 22);
             i.rd = get_bits(instruction_word, 0, 4);
 
-            if (i.opi == 0b010) {  // Arithmetic operation
+            if (i.opi == 0x2) {  // Arithmetic operation
                 i.sh = get_bits(instruction_word, 22, 22);
                 i.imm12 = get_bits(instruction_word, 10, 21);
                 i.rn = get_bits(instruction_word, 5, 9);
-            } else if (i.opi == 0b101) {  // Wide move
+            } else if (i.opi == 0x5) {  // Wide move
                 i.hw = get_bits(instruction_word, 21, 22);
                 i.imm16 = get_bits(instruction_word, 5, 20);
             }
@@ -111,14 +111,14 @@ InstructionType get_instruction_type(uint32_t instruction_word) {
     // x101    Data Processing (Register)
     // x1x0    Loads and Stores
     // 101x    Branches
-    if ((op0 & 0b1110) == 0b1000) {
+    if ((op0 & 0xE) == 0x8) {
         return DP_IMM;
-    } else if ((op0 & 0b0111) == 0b0101) {
+    } else if ((op0 & 0x7) == 0x5) {
         return DP_REG;
-    } else if ((op0 & 0b0101) == 0b0100) {
+    } else if ((op0 & 0x5) == 0x4) {
         // SDT/LL share the same op0 pattern, use the MSB to differentiate
         return (instruction_word & (1 << 31)) ? SDT : LL;
-    } else if ((op0 & 0b1110) == 0b1010) {
+    } else if ((op0 & 0xE) == 0xA) {
         return BRANCH;
     } else {
         return UNKNOWN;
