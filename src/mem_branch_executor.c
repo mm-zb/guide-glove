@@ -3,6 +3,9 @@
 #include "decoder.h"
 // Required for get_bits function
 
+#define GPIO_BASE 0x3f20 0000
+#define GPIO_END 0x3f20 0030
+
 // PC = PC + 4 * simm26
 void execute_branch_unconditional(ARMState* state, int64_t simm26) {
     uint64_t next_pc;
@@ -91,6 +94,8 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     int64_t simm9;
     int32_t simm19;
 
+    int bytes_stored;
+
     offset = instruction->offset;
     sf = instruction->sf;
     register_xn = instruction->xn;
@@ -106,7 +111,6 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
         case (PRE_INDEXED):
             simm9 = (int64_t)get_bits((uint32_t)offset, 12, 20);
             // Takes the correct 9 bits for the offset
-
             address = get_address_pre_indexed(state, simm9, register_xn, sf);
             break;
         case (POST_INDEXED):
@@ -125,14 +129,18 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
             return;
     }
 
-    // TODO: Add GPIO detection
-    // TODO: Add conditional write depending on sf
-    if (sf == 0) { // Store a 32-bit word
-
-    } else { // Store a 64-bit word
-
+    if ((address >= 0x32f00000) && (address <= 0x32f0030)) {
+        // Don't write to memory
+        // TODO: Add GPIO updating
     }
 
-    state->memory[address] = register_data;
-    // Temporary to have some effect
+    // Conditional write depending on sf
+    else if (sf == 0) { // Store a 32-bit word
+        bytes_stored = 4;
+    } else { // Store a 64-bit doubleword
+        bytes_stored = 8;
+    }
+    for (int i=0; i<bytes_stored; i++) {
+        state->memory[address + i] = (register_data >> 8*i) & 0xFF;
+    }
 }
