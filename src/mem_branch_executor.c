@@ -3,8 +3,8 @@
 #include "decoder.h"
 // Required for get_bits function
 
-#define GPIO_BASE 0x3f20 0000
-#define GPIO_END 0x3f20 0030
+#define GPIO_BASE 0x3f200000
+#define GPIO_END 0x3f200030
 
 // PC = PC + 4 * simm26
 void execute_branch_unconditional(ARMState* state, int64_t simm26) {
@@ -83,55 +83,22 @@ void execute_branch_cond(ARMState* state, int64_t simm19, uint8_t cond) {
 // Calculates address and moves data into memory, from register rt
 void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction* instruction) {
     uint64_t address;
-    uint16_t offset;
     uint8_t sf;
 
-    uint8_t register_xn;
-    uint8_t register_xm;
     uint8_t register_rt;
     uint64_t register_data;
 
-    int64_t simm9;
-    int32_t simm19;
-
     int bytes_stored;
 
-    offset = instruction->offset;
-    sf = instruction->sf;
-    register_xn = instruction->xn;
+    address = calculate_address(state, addr_mode, instruction);
+
     register_rt = instruction->rt;
     register_data = state->registers[register_rt];
 
-    // Common values to all addressing modes
-
-    switch (addr_mode) {
-        case (UNSIGNED_IMMEDIATE): 
-            address = get_address_unsigned_immediate(state, (uint64_t)offset, register_xn, sf);
-            break;
-        case (PRE_INDEXED):
-            simm9 = (int64_t)get_bits((uint32_t)offset, 12, 20);
-            // Takes the correct 9 bits for the offset
-            address = get_address_pre_indexed(state, simm9, register_xn, sf);
-            break;
-        case (POST_INDEXED):
-            simm9 = (int64_t)get_bits((uint32_t)offset, 12, 20);
-            // Repeated line cannot be avoided
-
-            address = get_address_post_indexed(state, simm9, register_xn, sf);
-            break;
-        case (REGISTER_OFFSET):
-            register_xm = (uint8_t)get_bits((uint32_t)offset, 16, 20);
-            address = get_address_register_offset(state, register_xm, register_xn, sf);
-            break;
-        default:
-            // Invalid addressing mode
-            // Do nothing for now
-            return;
-    }
-
-    if ((address >= 0x32f00000) && (address <= 0x32f0030)) {
+    if ((address >= GPIO_BASE) && (address <= GPIO_END)) {
         // Don't write to memory
         // TODO: Add GPIO updating
+        return;
     }
 
     // Conditional write depending on sf
@@ -142,5 +109,82 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     }
     for (int i=0; i<bytes_stored; i++) {
         state->memory[address + i] = (register_data >> 8*i) & 0xFF;
+    }
+}
+
+// Calculates address and moves data into register rt, from memory
+void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction* instruction) {
+    uint64_t address;
+    uint8_t sf;
+
+    uint8_t register_rt;
+    uint64_t data_to_store;
+
+    int bytes_stored;
+
+    address = calculate_address(state, addr_mode, instruction);
+    sf = instruction->sf;
+
+    register_rt = instruction->rt;
+
+
+    if ((address >= GPIO_BASE) && (address <= GPIO_END)) {
+        // Don't read from memory
+        // TODO: Add GPIO updating logic
+        return;
+    }
+
+    // Conditional write depending on sf
+    else if (sf == 0) { // Store a 32-bit word
+        bytes_stored = 4;
+    } else { // Store a 64-bit doubleword
+        bytes_stored = 8;
+    }
+    for (int i=0; i<bytes_stored; i++) {
+        data_to_store |= (uint64_t)state->memory[address + i] << (8 * i);
+    }
+    state->registers[register_rt] = data_to_store;
+}
+
+// Calculates address with addressing mode
+uint64_t calculate_address(ARMState* state, addressing_mode addr_mode, DecodedInstruction* instruction) {
+    uint64_t address;
+    uint16_t offset;
+    uint8_t sf;
+
+    uint8_t register_xn;
+    uint8_t register_xm;
+
+    int64_t simm9;
+    int32_t simm19;
+
+    offset = instruction->offset;
+    register_xn = instruction->xn;
+    sf = instruction->sf;
+
+    switch (addr_mode) {
+    case (UNSIGNED_IMMEDIATE): 
+        address = get_address_unsigned_immediate(state, (uint64_t)offset, register_xn, sf);
+        break;
+    case (PRE_INDEXED):
+        simm9 = (int64_t)get_bits((uint32_t)offset, 12, 20);
+        // Takes the correct 9 bits for the offset
+        address = get_address_pre_indexed(state, simm9, register_xn, sf);
+        break;
+    case (POST_INDEXED):
+        simm9 = (int64_t)get_bits((uint32_t)offset, 12, 20);
+        // Repeated line cannot be avoided
+
+        address = get_address_post_indexed(state, simm9, register_xn, sf);
+        break;
+    case (REGISTER_OFFSET):
+        register_xm = (uint8_t)get_bits((uint32_t)offset, 16, 20);
+        address = get_address_register_offset(state, register_xm, register_xn, sf);
+        break;
+    default:
+        // Invalid addressing mode
+        // Do nothing for now
+        fprintf(stderr, "Invalid addressing mode!");
+        return;
     }
 }
