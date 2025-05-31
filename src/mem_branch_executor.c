@@ -91,6 +91,7 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     int bytes_stored;
 
     address = calculate_address(state, addr_mode, instruction);
+    sf = instruction->sf;
 
     register_rt = instruction->rt;
     register_data = state->registers[register_rt];
@@ -116,26 +117,26 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
 void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction* instruction) {
     uint64_t address;
     uint8_t sf;
+    int32_t simm19;
 
     uint8_t register_rt;
     uint64_t data_to_store;
 
     int bytes_stored;
 
-    address = calculate_address(state, addr_mode, instruction);
     sf = instruction->sf;
 
+    if (addr_mode == LOAD_LITERAL) {
+        simm19 = (int32_t)instruction->simm19;
+        address = get_address_load_literal(state, simm19, sf);
+    } else {
+        address = calculate_address(state, addr_mode, instruction);
+    }
+    
     register_rt = instruction->rt;
 
-
-    if ((address >= GPIO_BASE) && (address <= GPIO_END)) {
-        // Don't read from memory
-        // TODO: Add GPIO updating logic
-        return;
-    }
-
     // Conditional write depending on sf
-    else if (sf == 0) { // Store a 32-bit word
+    if (sf == 0) { // Store a 32-bit word
         bytes_stored = 4;
     } else { // Store a 64-bit doubleword
         bytes_stored = 8;
