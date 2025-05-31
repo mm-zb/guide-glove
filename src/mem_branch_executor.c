@@ -120,7 +120,7 @@ void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     int32_t simm19;
 
     uint8_t register_rt;
-    uint64_t data_to_store;
+    uint64_t data_to_store = 0;
 
     int bytes_stored;
 
@@ -186,6 +186,6 @@ uint64_t calculate_address(ARMState* state, addressing_mode addr_mode, DecodedIn
         // Invalid addressing mode
         // Do nothing for now
         fprintf(stderr, "Invalid addressing mode!");
-        return;
+        return 0;
     }
 }
