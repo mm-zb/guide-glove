@@ -61,6 +61,6 @@ uint64_t get_address_load_literal(ARMState* state, int32_t simm19, uint8_t sf) {
     uint64_t target_address;
     
     pc_address = state->pc;
-    target_address = pc_address + simm19 << 2;
+    target_address = pc_address + (simm19 << 2);
     return target_address;
 }

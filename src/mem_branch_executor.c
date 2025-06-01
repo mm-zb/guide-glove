@@ -38,38 +38,38 @@ void execute_branch_register(ARMState* state, uint8_t register_xn) {
 
 // If cond then PC = PC + 4 * simm19
 void execute_branch_cond(ARMState* state, int64_t simm19, uint8_t cond) {
-    const EQ = 0x0;
-    const NE = 0x1;
-    const GE = 0xA;
-    const LT = 0xB;
-    const GT = 0xC;
-    const LE = 0xD;
-    const AL = 0xE;
+    // const int EQ = 0x0;
+    // const int NE = 0x1;
+    // const int GE = 0xA;
+    // const int LT = 0xB;
+    // const int GT = 0xC;
+    // const int LE = 0xD;
+    // const int AL = 0xE;
 
     // Breaking out of the switch statement is the same as branching
     // Returning is the same as leaving the PC unchanged
     switch (cond) {
-        case EQ:
+        case 0x0:
             // (state->pstate.Z) ? break : return;
             // TODO: Change these if statements for one-liners somehow (as above)
             if (state->pstate.Z) break;
             return;
-        case NE:
+        case 0x1:
             if (!state->pstate.Z) break;
             return;
-        case GE:
+        case 0xA:
             if (state->pstate.N == state->pstate.V) break;
             return;
-        case LT:
+        case 0xB:
             if (state->pstate.N != state->pstate.V) break;
             return;
-        case GT:
+        case 0xC:
             if (state->pstate.Z==0 && state->pstate.N == state->pstate.V) break;
             return;
-        case LE:
+        case 0xD:
             if (!(state->pstate.Z==0 && state->pstate.N == state->pstate.V)) break;
             return;
-        case AL:
+        case 0xE:
             break;
         default:
             // Invalid condition code
@@ -93,7 +93,7 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     address = calculate_address(state, addr_mode, instruction);
     sf = instruction->sf;
 
-    register_rt = instruction->rt;
+    register_rt = instruction->sdt_ll_rt;
     register_data = state->registers[register_rt];
 
     if ((address >= GPIO_BASE) && (address <= GPIO_END)) {
@@ -127,13 +127,13 @@ void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     sf = instruction->sf;
 
     if (addr_mode == LOAD_LITERAL) {
-        simm19 = (int32_t)instruction->simm19;
+        simm19 = (int32_t)instruction->ll_simm19;
         address = get_address_load_literal(state, simm19, sf);
     } else {
         address = calculate_address(state, addr_mode, instruction);
     }
     
-    register_rt = instruction->rt;
+    register_rt = instruction->sdt_ll_rt;
 
     // Conditional write depending on sf
     if (sf == 0) { // Store a 32-bit word
@@ -157,10 +157,9 @@ uint64_t calculate_address(ARMState* state, addressing_mode addr_mode, DecodedIn
     uint8_t register_xm;
 
     int64_t simm9;
-    int32_t simm19;
 
-    offset = instruction->offset;
-    register_xn = instruction->xn;
+    offset = instruction->sdt_imm12;
+    register_xn = instruction->sdt_xn;
     sf = instruction->sf;
 
     switch (addr_mode) {
@@ -188,4 +187,5 @@ uint64_t calculate_address(ARMState* state, addressing_mode addr_mode, DecodedIn
         fprintf(stderr, "Invalid addressing mode!");
         return 0;
     }
+    return address;
 }
