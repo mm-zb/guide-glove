@@ -1,5 +1,5 @@
 #include "mem_branch_executor.h"
-// addressing.h included implicitly through mem_branch_executor.h
+// constants.h included implicitly through mem_branch_executor.h
 
 #define GPIO_BASE 0x3f200000
 #define GPIO_END 0x3f200030
@@ -18,7 +18,7 @@ void execute_branch_unconditional(ARMState* state, int64_t simm26) {
 
 // PC = Xn
 void execute_branch_register(ARMState* state, uint8_t register_xn) {
-    uint8_t xzr = 0x1F;
+    uint8_t xzr = ADDRESS_REGISTER_XZR;
     uint64_t next_pc;
     uint64_t target_address;
 

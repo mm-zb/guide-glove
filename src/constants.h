@@ -1,2 +1,11 @@
 #define MEMORY_SIZE (2 * 1024 * 1024) // 2MB
 #define HALT_INSTRUCTION 0x8a000000
+#define ADDRESS_REGISTER_XZR 0x1F
+
+typedef enum {
+    UNSIGNED_IMMEDIATE,
+    PRE_INDEXED,
+    POST_INDEXED,
+    REGISTER_OFFSET,
+    LOAD_LITERAL,
+} addressing_mode;

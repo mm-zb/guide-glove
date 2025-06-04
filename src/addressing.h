@@ -2,14 +2,7 @@
 #define ADDRESSING_H
 
 #include "arm_state.h"
-
-typedef enum {
-    UNSIGNED_IMMEDIATE,
-    PRE_INDEXED,
-    POST_INDEXED,
-    REGISTER_OFFSET,
-    LOAD_LITERAL,
-} addressing_mode;
+#include "constants.h"
 
 // Addressing mode prototypes
 // Each function here takes the number of the register (X0-30) rather than its contents
