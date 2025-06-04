@@ -114,7 +114,7 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
 void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction* instruction) {
     uint64_t address;
     uint8_t sf;
-    int32_t simm19;
+    int64_t simm19;
 
     uint8_t register_rt;
     uint64_t data_to_store = 0;
@@ -124,7 +124,7 @@ void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     sf = instruction->sf;
 
     if (addr_mode == LOAD_LITERAL) {
-        simm19 = (int32_t)instruction->ll_simm19;
+        simm19 = (int64_t)instruction->ll_simm19;
         address = get_address_load_literal(state, simm19, sf);
     } else {
         address = calculate_address(state, addr_mode, instruction);

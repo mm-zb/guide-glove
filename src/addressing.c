@@ -46,7 +46,7 @@ uint64_t get_address_register_offset(ARMState* state, uint8_t register_xm, uint8
 }
 
 // Address = PC + simm19 * 4
-uint64_t get_address_load_literal(ARMState* state, int32_t simm19, uint8_t sf) {
+uint64_t get_address_load_literal(ARMState* state, int64_t simm19, uint8_t sf) {
     uint64_t pc_address;
     uint64_t target_address;
     
