@@ -19,27 +19,16 @@ uint64_t get_address_unsigned_immediate(ARMState* state, uint64_t imm12, uint8_t
     return target_address;
 }
 
-// Address = Xn + simm9
-uint64_t get_address_pre_indexed(ARMState* state, int64_t simm9, uint8_t register_xn, uint8_t sf) {
+// if I = 1: Address = Xn + simm9
+// if I = 0: Address = Xn
+uint64_t get_address_indexed(ARMState* state, int64_t simm9, uint8_t register_xn, uint8_t sf, uint8_t I) {
     uint64_t register_data;
     uint64_t target_address;
 
     register_data = state->registers[register_xn];
-    target_address = register_data + simm9;
-    state->registers[register_xn] = target_address; 
-    // Emulates updating the register BEFORE getting the return address
-    return target_address;
-}
-
-// Address = Xn
-uint64_t get_address_post_indexed(ARMState* state, int64_t simm9, uint8_t register_xn, uint8_t sf) {
-    uint64_t register_data;
-    uint64_t target_address;
-
-    register_data = state->registers[register_xn];
-    target_address = register_data;
-    state->registers[register_xn] = target_address + simm9;
-    // Emulates updating the register AFTER getting the return address
+    target_address = register_data + (I ? simm9 : 0);
+    state->registers[register_xn] = register_data + simm9;
+    
     return target_address;
 }
 

@@ -152,6 +152,7 @@ uint64_t calculate_address(ARMState* state, addressing_mode addr_mode, DecodedIn
     uint64_t address;
     uint16_t offset;
     uint8_t sf;
+    uint8_t I;
 
     uint8_t register_xn;
     uint8_t register_xm;
@@ -167,15 +168,11 @@ uint64_t calculate_address(ARMState* state, addressing_mode addr_mode, DecodedIn
         address = get_address_unsigned_immediate(state, (uint64_t)offset, register_xn, sf);
         break;
     case (PRE_INDEXED):
-        simm9 = (int64_t)get_bits((uint32_t)offset, 12, 20);
-        // Takes the correct 9 bits for the offset
-        address = get_address_pre_indexed(state, simm9, register_xn, sf);
-        break;
     case (POST_INDEXED):
         simm9 = (int64_t)get_bits((uint32_t)offset, 12, 20);
-        // Repeated line cannot be avoided
-
-        address = get_address_post_indexed(state, simm9, register_xn, sf);
+        I = (uint8_t)instruction->sdt_I;
+        // Takes the correct 9 bits for the offset and the index flag I
+        address = get_address_indexed(state, simm9, register_xn, sf, I);
         break;
     case (REGISTER_OFFSET):
         register_xm = (uint8_t)get_bits((uint32_t)offset, 16, 20);
