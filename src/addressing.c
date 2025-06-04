@@ -3,7 +3,7 @@
 // Address = Xn + uoffset
 uint64_t get_address_unsigned_immediate(ARMState* state, uint64_t imm12, uint8_t register_xn, uint8_t sf) {
     uint64_t uoffset;
-    uint64_t register_data;
+    uint64_t base_address;
     uint64_t target_address;
 
     if (sf==0) { // Target register is 32-bit
@@ -15,8 +15,8 @@ uint64_t get_address_unsigned_immediate(ARMState* state, uint64_t imm12, uint8_t
     assert(register_xn <= 30);
     // Ensures that xn is a valid register index
 
-    register_data = state->registers[register_xn];
-    target_address = register_data + uoffset;
+    base_address = state->registers[register_xn];
+    target_address = base_address + uoffset;
     return target_address;
 }
 

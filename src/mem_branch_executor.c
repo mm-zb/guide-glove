@@ -22,7 +22,7 @@ void execute_branch_unconditional(ARMState* state, int64_t simm26) {
 void execute_branch_register(ARMState* state, uint8_t register_xn) {
     uint8_t xzr = 0x1F;
     uint64_t next_pc;
-    uint64_t register_data;
+    uint64_t target_address;
 
     if (register_xn == xzr) {
         // We are at the zero register, we do not need to handle this case
@@ -31,8 +31,8 @@ void execute_branch_register(ARMState* state, uint8_t register_xn) {
         return;
     }
 
-    register_data = state->registers[register_xn];
-    next_pc = register_data;
+    target_address = state->registers[register_xn];
+    next_pc = target_address;
     state->pc = next_pc;
 }
 
@@ -50,8 +50,6 @@ void execute_branch_cond(ARMState* state, int64_t simm19, uint8_t cond) {
     // Returning is the same as leaving the PC unchanged
     switch (cond) {
         case 0x0:
-            // (state->pstate.Z) ? break : return;
-            // TODO: Change these if statements for one-liners somehow (as above)
             if (state->pstate.Z) break;
             return;
         case 0x1:
@@ -86,7 +84,7 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     uint8_t sf;
 
     uint8_t register_rt;
-    uint64_t register_data;
+    uint64_t target_register;
 
     int bytes_stored;
 
@@ -94,22 +92,23 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     sf = instruction->sf;
 
     register_rt = instruction->sdt_ll_rt;
-    register_data = state->registers[register_rt];
+    target_register = state->registers[register_rt];
 
-    if ((address >= GPIO_BASE) && (address <= GPIO_END)) {
-        // Don't write to memory
-        // TODO: Add GPIO updating
-        return;
-    }
+    // TODO: Add GPIO updating
+
+    // if ((address >= GPIO_BASE) && (address <= GPIO_END)) {
+    //     // Don't write to memory
+    //     return;
+    // }
 
     // Conditional write depending on sf
-    else if (sf == 0) { // Store a 32-bit word
+    /* else */ if (sf == 0) { // Store a 32-bit word
         bytes_stored = 4;
     } else { // Store a 64-bit doubleword
         bytes_stored = 8;
     }
     for (int i=0; i<bytes_stored; i++) {
-        state->memory[address + i] = (register_data >> 8*i) & 0xFF;
+        state->memory[address + i] = (target_register >> 8*i) & 0xFF;
     }
 }
 
