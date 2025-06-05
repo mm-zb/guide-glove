@@ -25,13 +25,13 @@ Our group used a structured workflow and leveraged Git with dedicated \texttt{fe
 The emulator development was systematically divided into four core components, ensuring balanced responsibilities across the team:
 
 \begin{itemize}[leftmargin=1.5em,noitemsep, itemsep=0.5em, parsep=0em]
-    \item \textbf{Jai -- Core System \& I/O (The "Foundation"):}\\
+    \item \textbf{Jai -- Core System \& I/O:}\\
     Established the emulator's core infrastructure by defining \texttt{ARMState} (registers, PC, PSTATE, memory), initialising its state, implementing the binary file loader, and managing the main execution loop, including command-line parsing, halt instruction, and final output.
-    \item \textbf{Richard -- Instruction Decoding \& Bitwise Utilities (The "Parser"):}\\
+    \item \textbf{Richard -- Instruction Decoding \& Bitwise Utilities:}\\
     Led instruction decoding by developing bit extraction utilities, defining C structures (\texttt{\seqsplit{instruction\_types.h}}) for decoded instructions, implementing \texttt{decode\_instruction}, and creating helpers for \texttt{PSTATE} flag updates and register ID mapping.
-    \item \textbf{Prasanna -- Data Processing Instructions Execution (The "Calculator"):}\\
+    \item \textbf{Prasanna -- Data Processing Instructions Execution:}\\
     Implemented the execution logic for all data processing instructions (arithmetic, wide moves, logical, multiplies), developed underlying bitwise shift functions, and integrated \texttt{PSTATE} flag updates.
-    \item \textbf{Zayan -- Memory \& Control Flow Instructions Execution (The "Jumper"):}\\
+    \item \textbf{Zayan -- Memory \& Control Flow Instructions Execution:}\\
     Implemented memory access and control flow instructions, including single data transfers (\texttt{ldr}, \texttt{str}) with all addressing modes and load/store size handling, and developed all branch instructions for PC modification, offset calculations, and conditional execution. \todo{For Part III, Zayan will integrate GPIO memory write detection here.}
 \end{itemize}
 
