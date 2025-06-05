@@ -1,30 +1,50 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article} % A4paper option
 
 \usepackage{fullpage}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem} % For more control over lists, helpful for readability
+\usepackage{seqsplit} % For breaking long sequences of text
+
+% Defines a command for TODOs to make them stand out in draft
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO: #1}}}
 
 \begin{document}
 
-\title{ARM Checkpoint... }
-\author{TODO}
+\title{ARMv8 AArch64 Emulator Checkpoint Report}
+\author{Team 54}
 
 \maketitle
 
-\section{Group Organisation}
+\section{Group Organisation and Workflow}
+\label{sec:group-organisation}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Our group used a structured workflow and leveraged Git with dedicated \texttt{feat/} branches and frequent stub implementations to maintain code quality and compilation. Commit messages followed an imperative format with contributor shortcodes. Every new feature created a GitLab merge request which was reviewed and approved by a separate team member to uphold coding standards.
 
-\section{Implementation Strategies}
+\subsection{Division of Labour for Emulator (Part I)}
+The emulator development was systematically divided into four core components, ensuring balanced responsibilities across the team:
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+\begin{itemize}[leftmargin=1.5em,noitemsep, itemsep=0.5em, parsep=0em]
+    \item \textbf{Jai -- Core System \& I/O (The "Foundation"):}\\
+    Established the emulator's core infrastructure by defining \texttt{ARMState} (registers, PC, PSTATE, memory), initialising its state, implementing the binary file loader, and managing the main execution loop, including command-line parsing, halt instruction, and final output.
+    \item \textbf{Richard -- Instruction Decoding \& Bitwise Utilities (The "Parser"):}\\
+    Led instruction decoding by developing bit extraction utilities, defining C structures (\texttt{\seqsplit{instruction\_types.h}}) for decoded instructions, implementing \texttt{decode\_instruction}, and creating helpers for \texttt{PSTATE} flag updates and register ID mapping.
+    \item \textbf{Prasanna -- Data Processing Instructions Execution (The "Calculator"):}\\
+    Implemented the execution logic for all data processing instructions (arithmetic, wide moves, logical, multiplies), developed underlying bitwise shift functions, and integrated \texttt{PSTATE} flag updates.
+    \item \textbf{Zayan -- Memory \& Control Flow Instructions Execution (The "Jumper"):}\\
+    Implemented memory access and control flow instructions, including single data transfers (\texttt{ldr}, \texttt{str}) with all addressing modes and load/store size handling, and developed all branch instructions for PC modification, offset calculations, and conditional execution. \todo{For Part III, Zayan will integrate GPIO memory write detection here.}
+\end{itemize}
+
+\section{Group Progress and Communication}
+\label{sec:group-progress}
+\todo{This section will discuss how well the group is working, communication strategies (e.g., daily meetings/ messages), and how you imagine it might need to change for later tasks (e.g., more frequent pairing, clearer ownership on shared components). Keep it to 1-2 paragraphs.}
+
+\section{Emulator Structure and Reusability}
+\label{sec:emulator-structure}
+\todo{This section will detail the high-level architecture of the emulator. How are the fetch, decode, and execute phases structured? Discuss the main data structures (e.g., how ARMState is used) and functions. Highlight parts of the emulator's design or code that you anticipate will be reusable for the assembler (e.g., register parsing logic, understanding instruction formats). Keep this to 1-2 paragraphs.}
+
+\section{Challenges and Mitigation}
+\label{sec:challenges}
+\todo{This section will outline specific technical or collaborative challenges encountered during the emulator's implementation. Examples might include: complex bitwise operations, handling endianness, debugging specific instruction types, or integrating different team members' code. For each challenge, explain your approach to mitigate it. For example, "Understanding ARMv8's shifting rules was challenging, mitigated by extensive diagramming and small-scale test cases." Keep this to 1-2 paragraphs.}
 
 \end{document}
