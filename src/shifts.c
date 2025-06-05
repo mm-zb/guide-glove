@@ -26,7 +26,6 @@ uint64_t perform_lsr(uint64_t value, uint8_t shift_amount, bool is_64bit){
 }
 
 uint64_t perform_asr(uint64_t value, uint8_t shift_amount, bool is_64bit){
-    uint8_t sign_bit_isolated; // Will hold 0x80 if negative, 0x00 if positive
     int sign_bit_position;
     uint64_t sign_fill_mask = 0; // Mask to fill vacated bits if negative
 

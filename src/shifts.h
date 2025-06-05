@@ -23,10 +23,10 @@ uint64_t perform_lsr(uint64_t value, uint8_t shift_amount, bool is_64bit);
 uint64_t perform_asr(uint64_t value, uint8_t shift_amount, bool is_64bit);
 
 //Performs a Rotate Right (ROR) operation.
-uint64_t perform_ror(uint64_t value, uint8_t shift_amount, bool is_64bit, bool* carry_out);
+uint64_t perform_ror(uint64_t value, uint8_t shift_amount, bool is_64bit);
 
 // Generic function to perform a shift based on ShiftType.
-uint64_t execute_shift(uint64_t value, uint8_t shift_amount, ShiftType type, bool is_64bit, bool* carry_out);
+uint64_t execute_shift(uint64_t value, uint8_t shift_amount, ShiftType type, bool is_64bit);
 
 
 #endif

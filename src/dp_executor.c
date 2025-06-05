@@ -1,13 +1,5 @@
 #include "dp_executor.h"
 
-
-void execute_dp_instruction(ARMState* state, const DecodedInstruction* instr) {
-    switch (instr->type) {
-        case DP_IMM: execute_dp_imm_instruction(ARMState* state, const DecodedInstruction* instr);
-        case DP_REG: execute_dp_reg_instruction(ARMState* state, const DecodedInstruction* instr);
-    }
-}
-
 static uint64_t get_register_value(ARMState* state, uint8_t reg_idx, bool is_64bit) {
     if (reg_idx == 31) return 0; // ZR is register 31
     if (is_64bit) {
@@ -24,6 +16,25 @@ static void set_register_value(ARMState* state, uint8_t reg_idx, uint64_t value,
     } else {
         // Writing to Wn clears upper 32 bits of Xn
         state->registers[reg_idx] = (uint64_t)(uint32_t)value;
+    }
+}
+
+// --- Forward declarations for static functions ---
+static void execute_dp_imm_instruction(ARMState* state, const DecodedInstruction* instr);
+static void execute_dp_reg_instruction(ARMState* state, const DecodedInstruction* instr);
+
+void execute_dp_instruction(ARMState* state, const DecodedInstruction* instr) {
+    switch (instr->type) {
+        case DP_IMM: execute_dp_imm_instruction(state, instr); break;
+        case DP_REG: execute_dp_reg_instruction(state, instr); break;
+        case SDT:
+        case LL:
+        case BRANCH:
+        case HALT:
+        case UNKNOWN:
+        default:
+            fprintf(stderr, "Error: execute_dp_instruction called with unhandled instruction type %d\n", instr->type);
+            break;
     }
 }
 
@@ -89,11 +100,12 @@ static void execute_dp_imm_instruction(ARMState* state, const DecodedInstruction
                     result = operand_to_move;
                     // For 32-bit MOVZ, result is imm shifted into lower 32-bits, upper 32-bits zero.
                     break;
-                case 0x03: // MOVK
+                case 0x03: { // MOVK
                     uint64_t current_rd_val = get_register_value(state, instr->dp_rd, sf);
                     uint64_t mask_16bit_at_pos = (sf ? 0xFFFFULL : 0xFFFFU) << hw_shift;
                     result = (current_rd_val & ~mask_16bit_at_pos) | operand_to_move;
                     break;
+                }
             }
             set_register_value(state, instr->dp_rd, result, sf);
             break;
@@ -108,7 +120,7 @@ static void execute_dp_reg_instruction(ARMState* state, const DecodedInstruction
     uint64_t val_rn, val_rm, val_ra;
     uint64_t operand2;
     uint64_t result;
-    bool carry_from_shift = false; // To capture carry from shift operations for PSTATE.C
+    //bool carry_from_shift = false; // To capture carry from shift operations for PSTATE.C
 
     // Get operand values from registers
     val_rn = get_register_value(state, instr->dp_rn, sf);
@@ -117,7 +129,7 @@ static void execute_dp_reg_instruction(ARMState* state, const DecodedInstruction
     // Calculate Operand2: Apply shift to Rm
     operand2 = execute_shift(val_rm, instr->dp_reg_shift_amount, 
                              (ShiftType)instr->dp_reg_shift_type, 
-                             sf, &carry_from_shift);
+                             sf);
 
     if (instr->dp_reg_M == 0) {
         // --- Arithmetic or Logical Operation (M=0) ---
@@ -126,13 +138,13 @@ static void execute_dp_reg_instruction(ARMState* state, const DecodedInstruction
             operand2 = sf ? ~operand2 : (uint32_t)(~operand2);
         }
 
-        uint8_t logical_op_selector = (instr->dp_reg_opr >> 1) & 0x3; // Extracts opc field (bits 2-1 of opr)
-        bool S_flag = (instr->dp_opc & 0x1); // Bit 0 of dp_opc usually indicates if it sets flags (e.g. ADDS vs ADD)
+        //uint8_t logical_op_selector = (instr->dp_reg_opr >> 1) & 0x3; // Extracts opc field (bits 2-1 of opr)
+        //bool S_flag = (instr->dp_opc & 0x1); // Bit 0 of dp_opc usually indicates if it sets flags (e.g. ADDS vs ADD)
 
         if (! ( (instr->dp_reg_opr >> 3) & 0x1 ) ) { // If bit 3 of opr is 0, it's logical
 
             bool set_flags = (instr->dp_opc & 0x1);
-            set_flags = (instr->dp_opc & 0b01); // get S flag (bit 29 of instruction word)
+            set_flags = (instr->dp_opc & 0x01); // get S flag (bit 29 of instruction word)
 
             uint8_t op_code_logical = (instr->dp_opc >> 1); // Bit 30 of instruction word
 
@@ -154,7 +166,7 @@ static void execute_dp_reg_instruction(ARMState* state, const DecodedInstruction
             set_register_value(state, instr->dp_rd, result, sf);
 
         } else { // Arithmetic: ADD, ADDS, SUB, SUBS (M=0, opr[3]=1)
-            bool is_subtract = (instr->dp_opc & 0b10);
+            bool is_subtract = (instr->dp_opc & 0x02);
             is_subtract = ((instr->dp_opc >> 1) & 0x1); // get op[1] (instr bit 30)
 
             if (is_subtract) { // SUB or SUBS
@@ -164,7 +176,7 @@ static void execute_dp_reg_instruction(ARMState* state, const DecodedInstruction
             }
             set_register_value(state, instr->dp_rd, result, sf);
 
-            bool set_flags = (instr->dp_opc & 0b01); // S flag (instr bit 29)
+            bool set_flags = (instr->dp_opc & 0x01); // S flag (instr bit 29)
             if (set_flags || instr->dp_rd == 31) { // If S bit is set or Rd is ZR (CMP, CMN)
                 // TODO update pstate
             }
