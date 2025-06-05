@@ -12,8 +12,8 @@ all: assemble emulate
 assemble: assemble.o arm_state.o
 	$(CC) assemble.o arm_state.o $(LDFLAGS) $(LDLIBS) -o assemble
 
-emulate: emulate.o arm_state.o decoder.o executor.o
-	$(CC) emulate.o arm_state.o decoder.o executor.o $(LDFLAGS) $(LDLIBS) -o emulate
+emulate: emulate.o arm_state.o decoder.o executor.o mem_branch_executor.o addressing.o
+	$(CC) emulate.o arm_state.o decoder.o executor.o mem_branch_executor.o addressing.o $(LDFLAGS) $(LDLIBS) -o emulate
 
 test: test_arm_state_init
 	./test_arm_state_init
