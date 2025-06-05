@@ -22,7 +22,7 @@ uint64_t get_address_unsigned_immediate(ARMState* state, uint64_t imm12, uint8_t
 
 // if I = 1: Address = Xn + simm9
 // if I = 0: Address = Xn
-uint64_t get_address_indexed(ARMState* state, int64_t simm9, uint8_t register_xn, uint8_t sf, uint8_t I) {
+uint64_t get_address_indexed(ARMState* state, int64_t simm9, uint8_t register_xn, uint8_t I) {
     uint64_t register_data;
     uint64_t target_address;
 
@@ -34,7 +34,7 @@ uint64_t get_address_indexed(ARMState* state, int64_t simm9, uint8_t register_xn
 }
 
 // Address = Xn + Xm
-uint64_t get_address_register_offset(ARMState* state, uint8_t register_xm, uint8_t register_xn, uint8_t sf) {
+uint64_t get_address_register_offset(ARMState* state, uint8_t register_xm, uint8_t register_xn) {
     uint64_t register_n_data;
     uint64_t register_m_data;
     uint64_t target_address;
@@ -46,7 +46,7 @@ uint64_t get_address_register_offset(ARMState* state, uint8_t register_xm, uint8
 }
 
 // Address = PC + simm19 * 4
-uint64_t get_address_load_literal(ARMState* state, int64_t simm19, uint8_t sf) {
+uint64_t get_address_load_literal(ARMState* state, int64_t simm19) {
     uint64_t pc_address;
     uint64_t target_address;
     
