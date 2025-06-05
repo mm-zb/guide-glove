@@ -14,6 +14,6 @@ uint64_t get_address_indexed(ARMState* state, int64_t simm9, uint8_t register_xn
 // Register Offset 
 uint64_t get_address_register_offset(ARMState* state, uint8_t register_xm, uint8_t register_xn);
 // Load Literal
-uint64_t get_address_load_literal(ARMState* state, int32_t simm19);
+uint64_t get_address_load_literal(ARMState* state, int64_t simm19);
 
 #endif

@@ -1,4 +1,5 @@
 #include "addressing.h"
+#include <assert.h>
 
 // Address = Xn + uoffset
 uint64_t get_address_unsigned_immediate(ARMState* state, uint64_t imm12, uint8_t register_xn, uint8_t sf) {

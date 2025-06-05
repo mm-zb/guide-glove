@@ -125,7 +125,7 @@ void execute_ldr(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
 
     if (addr_mode == LOAD_LITERAL) {
         simm19 = (int64_t)instruction->ll_simm19;
-        address = get_address_load_literal(state, simm19, sf);
+        address = get_address_load_literal(state, simm19);
     } else {
         address = calculate_address(state, addr_mode, instruction);
     }
@@ -169,11 +169,11 @@ uint64_t calculate_address(ARMState* state, addressing_mode addr_mode, DecodedIn
         simm9 = (int64_t)instruction->sdt_simm9;
         I = (uint8_t)instruction->sdt_I;
         // Takes the correct 9 bits for the offset and the index flag I
-        address = get_address_indexed(state, simm9, register_xn, sf, I);
+        address = get_address_indexed(state, simm9, register_xn, I);
         break;
     case (REGISTER_OFFSET):
         register_xm = (uint8_t)instruction->sdt_xm;
-        address = get_address_register_offset(state, register_xm, register_xn, sf);
+        address = get_address_register_offset(state, register_xm, register_xn);
         break;
     default:
         // Invalid addressing mode
