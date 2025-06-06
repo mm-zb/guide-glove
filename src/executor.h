@@ -3,12 +3,8 @@
 
 #include <stdint.h>
 #include "arm_state.h"
-#include "instruction_types.h" // If DecodedInstruction is defined
+#include "instruction_types.h"
 
-// TODO:
-// Function to execute a decoded instruction
-// For now, it takes a raw instruction word or a simple decoded form
-// Prasanna/Zayan will use the comprehensive DecodedInstruction struct
-bool execute_instruction(ARMState* state, uint32_t instruction_word);
+bool execute_instruction(ARMState* state, DecodedInstruction* instr);
 
 #endif

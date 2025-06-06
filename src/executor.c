@@ -1,8 +1,10 @@
+#include <stdio.h>
+#include <inttypes.h>
 #include "executor.h"
 #include "dp_executor.h"
 #include "mem_branch_executor.h"
 #include "decoder.h"
-#include <stdio.h>
+
 
 // Returns true if the PC was modified by the instruction (e.g., a taken branch)
 // and false otherwise (meaning the main loop should increment PC by 4)
@@ -95,8 +97,8 @@ bool execute_instruction(ARMState* state, DecodedInstruction* instr) {
 
         case UNKNOWN:
         default:
-            fprintf(stderr, "Error: Unknown instruction type %d or unhandled instruction 0x%08x at PC 0x%016"PRIx64"\n",
-                    instr->type, instr->raw_instruction, state->pc);
+            fprintf(stderr, "Error: Unknown instruction type %d or unhandled instruction 0x%08x at PC 0x%016" PRIx64 "\n",
+                (int)instr->type, (unsigned int)instr->raw_instruction, state->pc);
             // This would likely be a fatal error in a real emulator
             return true; // Prevent further execution on unknown instruction to avoid infinite loops
     }
