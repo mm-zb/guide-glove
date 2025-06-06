@@ -32,7 +32,7 @@ The emulator development was systematically divided into four core components, e
     \item \textbf{Prasanna -- Data Processing Instructions Execution:}\\
     Implemented the execution logic for all data processing instructions (arithmetic, wide moves, logical, multiplies), developed underlying bitwise shift functions, and integrated \texttt{PSTATE} flag updates.
     \item \textbf{Zayan -- Memory \& Control Flow Instructions Execution:}\\
-    Implemented memory access and control flow instructions, including single data transfers (\texttt{ldr}, \texttt{str}) with all addressing modes and load/store size handling, and developed all branch instructions for PC modification, offset calculations, and conditional execution. \todo{For Part III, Zayan will integrate GPIO memory write detection here.}
+    Implemented memory access and control flow instructions, including single data transfers (\texttt{ldr}, \texttt{str}) with all addressing modes and load/store size handling, and developed all branch instructions for PC modification, offset calculations, and conditional execution.
 \end{itemize}
 
 \section{Group Progress and Communication}
@@ -44,7 +44,13 @@ For later parts of the project, we can see our current communication standards c
 
 \section{Emulator Structure and Reusability}
 \label{sec:emulator-structure}
-\todo{This section will detail the high-level architecture of the emulator. How are the fetch, decode, and execute phases structured? Discuss the main data structures (e.g., how ARMState is used) and functions. Highlight parts of the emulator's design or code that you anticipate will be reusable for the assembler (e.g., register parsing logic, understanding instruction formats). Keep this to 1-2 paragraphs.}
+\subsection*{Emulator Architecture and Reusability for Assembler}
+
+Our emulator is structured around a standard Fetch-Decode-Execute cycle, operating on a shared \texttt{ARMState} struct that represents the machine's current state. This struct includes an array of 64-bit general-purpose registers (\texttt{registers[31]}), the program counter (\texttt{pc}), a \texttt{PSTATE} struct holding the NZCV flags as bools, and a 2MB byte-addressable memory array.\\
+
+The fetch phase reads 32-bit A64 instructions from memory using the current PC. The decode phase identifies the instruction category using bits 25–28 and extracts relevant fields using bitwise operations, with the help of reusable utility functions (e.g., \texttt{get\_bits()}). A decoded instruction is represented by a \texttt{DecodedInstruction} struct which includes the instruction type as an enum \texttt{type}, a 32-bit \texttt{raw\_instruction} and members for the various instruction-specific fields (e.g., \texttt{dp\_imm\_imm12}). The execute phase performs the instruction logic using helper modules for arithmetic, memory access, or branching, updating the \texttt{ARMState} accordingly and incrementing the PC.\\
+
+Several components of the emulator will be reusable in the assembler, especially the instruction decoding logic and its bit extraction and field parsing logic, which can be reverse engineered to help us generate binary encodings from assembly syntax. Additionally, functions that map register names to IDs and handle 32-bit versus 64-bit register size will be useful when parsing operands.
 
 \section{Challenges and Mitigation}
 \label{sec:challenges}
