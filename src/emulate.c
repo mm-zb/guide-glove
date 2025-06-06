@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
             break; 
         }
         
-        // Execute the instruction. The executor returns true if it handled PC update (e.g. a taken branch).
+        // Execute the instruction. The executor returns true if it handled the PC update (e.g. a taken branch).
         // It's vital that if execute_instruction returns true, the PC is not incremented by 4 here.
         bool pc_modified_by_instruction = execute_instruction(&arm_state, &decoded_instr);
 
@@ -79,7 +79,6 @@ int main(int argc, char **argv) {
 }
 
 void load_binary_to_memory(const char* filename, ARMState* state) {
-    // Open in binary read mode
     FILE* file = fopen(filename, "rb"); 
     if (!file) {
         fprintf(stderr, "Error: Could not open input file '%s'\n", filename);

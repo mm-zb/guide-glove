@@ -4,7 +4,7 @@
 #include "decoder.h"
 #include <stdio.h>
 
-// Returna true if the PC was modified by the instruction (e.g., a taken branch)
+// Returns true if the PC was modified by the instruction (e.g., a taken branch)
 // and false otherwise (meaning the main loop should increment PC by 4)
 bool execute_instruction(ARMState* state, DecodedInstruction* instr) {
     #ifdef DEBUG
@@ -48,7 +48,6 @@ bool execute_instruction(ARMState* state, DecodedInstruction* instr) {
         case BRANCH: {
             bool is_branch_taken = false;
             // Compare the two most significant bits (instruction[31:30]) to determine the branch type
-            // Equivalent to your switch(get_bits(instruction_word, 30, 31)) in decoder
             uint32_t branch_group_id = get_bits(instr->raw_instruction, 30, 31); 
 
             switch (branch_group_id) {
