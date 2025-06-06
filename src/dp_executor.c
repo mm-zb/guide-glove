@@ -224,8 +224,13 @@ static void update_pstate_flags(ARMState* state, uint64_t result, uint64_t op1, 
     // Update Z flag (result is zero)
     state->pstate.Z = (result == 0);
 
+    // Determine if the instruction is arithmetic (IMM: opi == 010 REG: M == 0 and opr[3] == 1)
+    bool is_arithmetic =
+        (instr->type == DP_IMM && instr->dp_imm_opi == 2) ||
+        (instr->type == DP_REG && instr->dp_reg_M == 0 && (instr->dp_reg_opr >> 3) == 1);
+
     // Update C flag (1 if carry/borrow)
-    if (instr->type == DP_IMM) {
+    if (is_arithmetic) {
         // ADDS: C is set if there was a carry from the addition
         if (instr->dp_opc == 0x1) state->pstate.C = (result < op1);
         // SUBS: C is set if there was NO borrow
@@ -238,7 +243,7 @@ static void update_pstate_flags(ARMState* state, uint64_t result, uint64_t op1, 
     int64_t sop1 = (int64_t)op1;
     int64_t sop2 = (int64_t)op2;
     int64_t sresult = (int64_t)result;
-    if (instr->type == DP_IMM) {
+    if (is_arithmetic) {
         if (instr->dp_opc == 0x1)  // ADDS
             state->pstate.V =
                 (sop1 > 0 && sop2 > 0 && sresult < 0) || (sop1 < 0 && sop2 < 0 && sresult > 0);
