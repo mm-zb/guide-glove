@@ -1,7 +1,4 @@
 #include "shifts.h"
-// Define MASK_32BIT as a 64-bit value with lower 32 bits set, for masking 64-bit variables to 32-bit effective width
-#define MASK_32BIT ((uint64_t)0x00000000FFFFFFFFULL) 
-#define MASK_64BIT ((uint64_t)0xFFFFFFFFFFFFFFFFULL)
 
 uint64_t perform_lsl(uint64_t value, uint8_t shift_amount, bool is_64bit) {
     if (!is_64bit) {
@@ -27,23 +24,26 @@ uint64_t perform_lsr(uint64_t value, uint8_t shift_amount, bool is_64bit){
 
 uint64_t perform_asr(uint64_t value, uint8_t shift_amount, bool is_64bit){
     int sign_bit_position;
+    bool is_negative = false;
     uint64_t sign_fill_mask = 0; // Mask to fill vacated bits if negative
-
+ 
     if (is_64bit) {
         sign_bit_position = 63;
         // If negative, create a mask of 1s for the bits that will be shifted in
         if ((value >> sign_bit_position) & 1) { // Check MSB of 64-bit value
-             if (shift_amount > 0 && shift_amount < 64) { // Avoid issues with shift by 0 or >= 64
-                sign_fill_mask = MASK_64BIT << (64 - shift_amount);
-             } else if (shift_amount >= 64) {
-                sign_fill_mask = MASK_64BIT; // All bits become sign bit
-             }
+            is_negative = true;
+            if (shift_amount > 0 && shift_amount < 64) { // Avoid issues with shift by 0 or >= 64
+            sign_fill_mask = MASK_64BIT << (64 - shift_amount);
+            } else if (shift_amount >= 64) {
+            sign_fill_mask = MASK_64BIT; // All bits become sign bit
+            }
         }
     } else { 
         value &= MASK_32BIT; // Work with lower 32 bits
         sign_bit_position = 31;
         // If negative (MSB of the 32-bit value is 1), create a mask
         if ((value >> sign_bit_position) & 1) {
+            is_negative = true;
             if (shift_amount > 0 && shift_amount < 32) {
                 sign_fill_mask = MASK_32BIT << (32 - shift_amount);
                 sign_fill_mask &= MASK_32BIT; // Ensure mask is also 32-bit
@@ -57,7 +57,7 @@ uint64_t perform_asr(uint64_t value, uint8_t shift_amount, bool is_64bit){
     uint64_t output = value >> shift_amount;
 
     // If the original number was negative, apply the sign fill mask
-    if ((value >> sign_bit_position) & 1) { // Re-check sign bit of original (relevant part of) value
+    if (is_negative) { // Re-check sign bit of original (relevant part of) value
          if (is_64bit && shift_amount >= 64) output = MASK_64BIT;
          else if (!is_64bit && shift_amount >= 32) output = MASK_32BIT;
          else output = output | sign_fill_mask;

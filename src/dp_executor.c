@@ -66,27 +66,21 @@ static void execute_dp_imm_instruction(ARMState* state, DecodedInstruction* inst
             // dp_opc: 00=ADD, 01=ADDS, 10=SUB, 11=SUBS
             switch (instr->dp_opc) {
                 case 0x00:  // ADD
-                    result = operand1_val + immediate_val;
-                    set_register_value(state, instr->dp_rd, result, sf);
-                    // ADD (no 'S') does not set flags
-                    break;
-
                 case 0x01:  // ADDS
                     result = operand1_val + immediate_val;
                     set_register_value(state, instr->dp_rd, result, sf);
-                    update_pstate_flags(state, result, operand1_val, immediate_val, instr);
-                    break;
+                    if (instr->dp_opc == 0x01) // if ADDS update PSTATE
+                         update_pstate_flags(state, result, operand1_val, immediate_val, instr);
+                    break; 
+
 
                 case 0x02:  // SUB
-                    result = operand1_val - immediate_val;
-                    set_register_value(state, instr->dp_rd, result, sf);
-                    // SUB (no 'S') does not set flags
-                    break;
-
                 case 0x03:  // SUBS (dp_opc 11 binary is 0x3)
                     result = operand1_val - immediate_val;
                     set_register_value(state, instr->dp_rd, result, sf);
-                    update_pstate_flags(state, result, operand1_val, immediate_val, instr);
+                    if (instr->dp_opc == 0x03) { // if SUBS update PSTATE
+                        update_pstate_flags(state, result, operand1_val, immediate_val, instr);
+                    }
                     break;
             }
             break;
@@ -177,7 +171,6 @@ static void execute_dp_reg_instruction(ARMState* state, DecodedInstruction* inst
 
         } else {  // Arithmetic: ADD, ADDS, SUB, SUBS (M=0, opr[3]=1)
             bool is_subtract = (instr->dp_opc & 0x02);
-            is_subtract = ((instr->dp_opc >> 1) & 0x1);  // get op[1] (instr bit 30)
 
             if (is_subtract) {  // SUB or SUBS
                 result = val_rn - operand2;
