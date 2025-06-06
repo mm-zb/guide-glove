@@ -1,30 +1,60 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article} % A4paper option
 
 \usepackage{fullpage}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem} % For more control over lists, helpful for readability
+\usepackage{seqsplit} % For breaking long sequences of text
+
+% Defines a command for TODOs to make them stand out in draft
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO: #1}}}
 
 \begin{document}
 
-\title{ARM Checkpoint... }
-\author{TODO}
+\title{ARMv8 AArch64 Emulator Checkpoint Report}
+\author{Team 54}
 
 \maketitle
 
-\section{Group Organisation}
+\section{Group Organisation and Workflow}
+\label{sec:group-organisation}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Our group used a structured workflow and leveraged Git with dedicated \texttt{feat/} branches and frequent stub implementations to maintain code quality and compilation. Commit messages followed an imperative format with contributor shortcodes. Every new feature created a GitLab merge request which was reviewed and approved by a separate team member to uphold coding standards.
 
-\section{Implementation Strategies}
+\subsection{Division of Labour for Emulator (Part I)}
+The emulator development was systematically divided into four core components, ensuring balanced responsibilities across the team:
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+\begin{itemize}[leftmargin=1.5em,noitemsep, itemsep=0.5em, parsep=0em]
+    \item \textbf{Jai -- Core System \& I/O:}\\
+    Established the emulator's core infrastructure by defining \texttt{ARMState} (registers, PC, PSTATE, memory), initialising its state, implementing the binary file loader, and managing the main execution loop, including command-line parsing, halt instruction, and final output.
+    \item \textbf{Richard -- Instruction Decoding \& Bitwise Utilities:}\\
+    Led instruction decoding by developing bit extraction utilities, defining C structures (\texttt{\seqsplit{instruction\_types.h}}) for decoded instructions, implementing \texttt{decode\_instruction}, and creating helpers for \texttt{PSTATE} flag updates and register ID mapping.
+    \item \textbf{Prasanna -- Data Processing Instructions Execution:}\\
+    Implemented the execution logic for all data processing instructions (arithmetic, wide moves, logical, multiplies), developed underlying bitwise shift functions, and integrated \texttt{PSTATE} flag updates.
+    \item \textbf{Zayan -- Memory \& Control Flow Instructions Execution:}\\
+    Implemented memory access and control flow instructions, including single data transfers (\texttt{ldr}, \texttt{str}) with all addressing modes and load/store size handling, and developed all branch instructions for PC modification, offset calculations, and conditional execution.
+\end{itemize}
 
+\section{Group Progress and Communication}
+\label{sec:group-progress}
+
+Our group is working well together thus far, showing strong individual performance as well as good mutual support. We have elected Jai as our group leader, to manage the workflow and decide how the project will be split between members of the group. Initially, we split the emulator task into 4 roughly equal components and developed group standards for git commit messages, branch names, and comment styles. Communicating through a Slack channel, we organise frequent meetings (approximately every other day) to ensure that each team member is continuing to stay on track with their assigned work. A key practice for us has been to pair up for merge commits so that we can peer review eachother’s code for quality and catch any potential issues. 
+
+For later parts of the project, we can see our current communication standards continuing majorly as they are. We feel that in future tasks (the assembler and extension) there will be more interdependencies on eachother’s code, so integration tasks will pose a greater challenge, yet we feel confident that our established communication standards and peer review process should suffice.
+
+\section{Emulator Structure and Reusability}
+\label{sec:emulator-structure}
+\subsection*{Emulator Architecture and Reusability for Assembler}
+
+Our emulator is structured around a standard Fetch-Decode-Execute cycle, operating on a shared \texttt{ARMState} struct that represents the machine's current state. This struct includes an array of 64-bit general-purpose registers (\texttt{registers[31]}), the program counter (\texttt{pc}), a \texttt{PSTATE} struct holding the NZCV flags as bools, and a 2MB byte-addressable memory array.\\
+
+The fetch phase reads 32-bit A64 instructions from memory using the current PC. The decode phase identifies the instruction category using bits 25–28 and extracts relevant fields using bitwise operations, with the help of reusable utility functions (e.g., \texttt{get\_bits()}). A decoded instruction is represented by a \texttt{DecodedInstruction} struct which includes the instruction type as an enum \texttt{type}, a 32-bit \texttt{raw\_instruction} and members for the various instruction-specific fields (e.g., \texttt{dp\_imm\_imm12}). The execute phase performs the instruction logic using helper modules for arithmetic, memory access, or branching, updating the \texttt{ARMState} accordingly and incrementing the PC.\\
+
+Several components of the emulator will be reusable in the assembler, especially the instruction decoding logic and its bit extraction and field parsing logic, which can be reverse engineered to help us generate binary encodings from assembly syntax. Additionally, functions that map register names to IDs and handle 32-bit versus 64-bit register size will be useful when parsing operands.
+
+\section{Challenges and Mitigation}
+\label{sec:challenges}
+Building the emulator presented both technical and collaborative hurdles. Technically, translating ARMv8 AArch64's instruction set into C demanded close attention to detail, especially with bitwise operations. Getting complex instruction behaviors right, like `ASR` and `ROR` shifts - with their nuances of signed bit propagation and 32/64-bit operand widths—or accurately calculating \texttt{PSTATE} flags (\texttt{N}, \texttt{Z}, \texttt{C}, \texttt{V}), was particularly challenging. Our approach involved breaking down these complexities into smaller functions, extensive manual cross-referencing with the ARM Architectural Reference Manual, and iterative refinement.
+
+From a collaborative standpoint, integrating code from four parallel development streams could have led to significant dependencies and merge conflicts. We mitigated this by establishing clear interfaces in shared header files (\texttt{arm\_state.h}, \texttt{instruction\_types.h}) early on, which proved essential for minimizing integration friction. Our disciplined Git workflow, emphasizing frequent `git pull --rebase` operations, helped maintain a linear history and manage divergences. When push failures indicated remote history conflicts, we quickly learned to diagnose these and employ `git push --force-with-lease` after a successful rebase.
 \end{document}
