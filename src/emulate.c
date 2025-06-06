@@ -117,7 +117,7 @@ void print_final_state(ARMState* state, FILE* output_file) {
         // Read a 32-bit word, then check if it's non-zero
         uint32_t word = read_word_from_memory(state, addr);
         if (word != 0) {
-            fprintf(output_file, "0x%08x: 0x%08x\n", addr, word);
+            fprintf(output_file, "0x%08x: %08x\n", addr, word);
         }
     }
 }
