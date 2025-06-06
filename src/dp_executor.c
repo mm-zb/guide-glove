@@ -20,10 +20,12 @@ static void set_register_value(ARMState* state, uint8_t reg_idx, uint64_t value,
 }
 
 // --- Forward declarations for static functions ---
-static void execute_dp_imm_instruction(ARMState* state, const DecodedInstruction* instr);
-static void execute_dp_reg_instruction(ARMState* state, const DecodedInstruction* instr);
+static void execute_dp_imm_instruction(ARMState* state, DecodedInstruction* instr);
+static void execute_dp_reg_instruction(ARMState* state, DecodedInstruction* instr);
+static void update_pstate_flags(ARMState* state, uint64_t result, uint64_t op1, uint64_t op2,
+                                DecodedInstruction* instr);
 
-void execute_dp_instruction(ARMState* state, const DecodedInstruction* instr) {
+void execute_dp_instruction(ARMState* state, DecodedInstruction* instr) {
     switch (instr->type) {
         case DP_IMM:
             execute_dp_imm_instruction(state, instr);
@@ -44,7 +46,7 @@ void execute_dp_instruction(ARMState* state, const DecodedInstruction* instr) {
     }
 }
 
-static void execute_dp_imm_instruction(ARMState* state, const DecodedInstruction* instr) {
+static void execute_dp_imm_instruction(ARMState* state, DecodedInstruction* instr) {
     bool sf = instr->sf;  // 0 for 32-bit (W reg), 1 for 64-bit (X reg)
     uint64_t operand1_val;
     uint64_t immediate_val;
@@ -121,7 +123,7 @@ static void execute_dp_imm_instruction(ARMState* state, const DecodedInstruction
 }
 
 // --- DP Register Instruction Execution ---
-static void execute_dp_reg_instruction(ARMState* state, const DecodedInstruction* instr) {
+static void execute_dp_reg_instruction(ARMState* state, DecodedInstruction* instr) {
     bool sf = instr->sf;  // 0 for 32-bit (W reg), 1 for 64-bit (X reg)
     uint64_t val_rn, val_rm, val_ra;
     uint64_t operand2;

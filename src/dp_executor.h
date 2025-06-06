@@ -6,6 +6,6 @@
 #include "shifts.h"            // For ShiftType enum and execute_shift function
 
 //Executes a decoded Data Processing (Immediate or Register) instruction.
-void execute_dp_instruction(ARMState* state, const DecodedInstruction* instr);
+void execute_dp_instruction(ARMState* state, DecodedInstruction* instr);
 
 #endif
