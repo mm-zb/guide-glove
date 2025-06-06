@@ -9,6 +9,6 @@
 // Function to execute a decoded instruction
 // For now, it takes a raw instruction word or a simple decoded form
 // Prasanna/Zayan will use the comprehensive DecodedInstruction struct
-void execute_instruction(ARMState* state, uint32_t instruction_word);
+bool execute_instruction(ARMState* state, uint32_t instruction_word);
 
 #endif
