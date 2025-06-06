@@ -43,15 +43,15 @@ int main(int argc, char **argv) {
         DecodedInstruction decoded_instr = decode_instruction(instruction_word);
 
         // Halt condition check (0x8a000000)
-        // If it's the halt instruction, stop *before* execution or PC increment.
-        // PC will remain at the address of the halt instruction for output.
+        // If it's the halt instruction, stop before execution or PC increment
+        // PC will remain at the address of the halt instruction for output
         if (decoded_instr.type == HALT) {
             // The executor function itself will log the halt message.
             break; 
         }
         
-        // Execute the instruction. The executor returns true if it handled PC update (e.g., a taken branch).
-        // It's crucial that if execute_instruction returns true, the PC is *not* incremented by 4 here.
+        // Execute the instruction. The executor returns true if it handled PC update (e.g. a taken branch).
+        // It's vital that if execute_instruction returns true, the PC is not incremented by 4 here.
         bool pc_modified_by_instruction = execute_instruction(&arm_state, &decoded_instr);
 
         // If the instruction was not a branch, or was a conditional branch not taken,
