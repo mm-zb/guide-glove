@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h> // For bool type
-#include <constants.h>
+#include "constants.h"
 
 // Enum for shift types
 typedef enum {
