@@ -31,34 +31,49 @@ int main(int argc, char **argv) {
     }
 
     fprintf(stderr, "Starting emulation...\n");
-    // Main emulator loop
-    uint64_t pc_prev = -1; // Initialize with a value that won't match PC=0
     
-    while (arm_state.pc < MEMORY_SIZE) { // Ensure PC doesn't go out of bounds
-        if (arm_state.pc % 4 != 0) { // Instructions must be 4-byte aligned
+    // Flag to control the main emulation loop
+    bool running = true;
+    // Store the PC value from the start of the current instruction's execution.
+    // Used to detect if the PC advanced after an instruction.
+    uint64_t prev_pc = arm_state.pc; 
+    
+    while (running && arm_state.pc < MEMORY_SIZE) { // Continue as long as 'running' is true and PC is within memory bounds
+        // Check if the Program Counter is 4-byte aligned
+        if (arm_state.pc % 4 != 0) { 
              fprintf(stderr, "Error: PC (0x%016"PRIx64") is not 4-byte aligned. Terminating.\n", arm_state.pc);
-             break;
+             running = false;
+             break; // Exit loop immediately for critical error
         }
 
+        // Fetch the 32-bit instruction word from memory at the current PC
         uint32_t instruction_word = read_word_from_memory(&arm_state, arm_state.pc);
+        // Decode the instruction word into its structured representation
         DecodedInstruction decoded_instr = decode_instruction(instruction_word);
         
-        // Execute the instruction. The executor returns true if it handled the PC update (e.g. a taken branch).
-        // It's vital that if execute_instruction returns true, the PC is not incremented by 4 here.
-        bool pc_modified_by_instruction = execute_instruction(&arm_state, &decoded_instr);
+        // It returns false if the PC should simply be incremented by 4 by the main loop.
+        bool pc_was_modified_by_instruction = execute_instruction(&arm_state, &decoded_instr);
 
-        // If the instruction was not a branch, or was a conditional branch not taken,
-        // increment PC by 4 for the next instruction.
-        if (!pc_modified_by_instruction) {
+        // After executing the instruction, check if it was the HALT instruction.
+        // We now set the 'running' flag to false to exit the emulation loop.
+        if (decoded_instr.type == HALT) {
+            running = false; 
+        } 
+        // If the instruction did not modify the PC (and it's not HALT), increment PC by 4 to the next instruction.
+        else if (!pc_was_modified_by_instruction) {
             arm_state.pc += 4;
         }
 
-        // Infinite loop detection (optional but good for debugging)
-        if (pc_prev == arm_state.pc) { 
+        // Detect if the Program Counter has not advanced since the beginning of this instruction's execution.
+        // This catches infinite loops like 'b .' (branch to self) where the PC might get stuck.
+        // This check is only performed if the emulator is still considered 'running' after the instruction.
+        if (running && arm_state.pc == prev_pc) { 
             fprintf(stderr, "Warning: PC did not advance (0x%016"PRIx64"). Possible infinite loop. Terminating.\n", arm_state.pc);
-            break;
+            running = false; // Set flag to stop execution
         }
-        pc_prev = arm_state.pc;
+        
+        // Update prev_pc for the next iteration.
+        prev_pc = arm_state.pc;
     }
     fprintf(stderr, "Emulation finished.\n");
 
@@ -120,4 +135,3 @@ void print_final_state(ARMState* state, FILE* output_file) {
         }
     }
 }
-
