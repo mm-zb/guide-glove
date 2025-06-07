@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include "arm_state.h"
 #include "decoder.h"
 #include "executor.h"
@@ -41,14 +42,6 @@ int main(int argc, char **argv) {
 
         uint32_t instruction_word = read_word_from_memory(&arm_state, arm_state.pc);
         DecodedInstruction decoded_instr = decode_instruction(instruction_word);
-
-        // Halt condition check (0x8a000000)
-        // If it's the halt instruction, stop before execution or PC increment
-        // PC will remain at the address of the halt instruction for output
-        if (decoded_instr.type == HALT) {
-            // The executor function itself will log the halt message.
-            break; 
-        }
         
         // Execute the instruction. The executor returns true if it handled the PC update (e.g. a taken branch).
         // It's vital that if execute_instruction returns true, the PC is not incremented by 4 here.
@@ -86,18 +79,24 @@ void load_binary_to_memory(const char* filename, ARMState* state) {
     }
 
     // Read the entire file into memory
-    size_t bytes_read = fread(state->memory, 1, sizeof(state->memory), file);
-    if (bytes_read == 0 && !feof(file)) { // Check if it's an actual read error, not just empty file
+    size_t element_size = 1; // Size of each element (1 byte)
+    size_t max_elements_to_read = sizeof(state->memory); // Max total bytes to read
+
+    size_t elements_read = fread(state->memory, element_size, max_elements_to_read, file);
+    size_t bytes_read_total = elements_read * element_size; // Calculate total bytes read
+
+
+    if (elements_read == 0 && !feof(file)) { // Check if it's an actual read error, not just empty file
         fprintf(stderr, "Error: Could not read from input file '%s'\n", filename);
         fclose(file);
         exit(EXIT_FAILURE);
     }
-    if (bytes_read > sizeof(state->memory)) {
+    if (bytes_read_total > sizeof(state->memory)) {
         fprintf(stderr, "Warning: Input file '%s' is larger than 2MB memory capacity. Only first 2MB loaded.\n", filename);
     }
 
     fclose(file);
-    fprintf(stderr, "Loaded %zu bytes from '%s' into memory.\n", bytes_read, filename);
+    fprintf(stderr, "Loaded %zu bytes from '%s' into memory.\n", bytes_read_total, filename);
 }
 
 void print_final_state(ARMState* state, FILE* output_file) {
