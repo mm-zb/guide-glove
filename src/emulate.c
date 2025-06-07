@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include "arm_state.h"
 #include "decoder.h"
 #include "executor.h"
@@ -30,27 +31,49 @@ int main(int argc, char **argv) {
     }
 
     fprintf(stderr, "Starting emulation...\n");
-    // Main emulator loop
-    while (arm_state.pc < sizeof(arm_state.memory)) { // Basic PC bounds check
-        uint32_t instruction_word = read_word_from_memory(&arm_state, arm_state.pc);
-
-        // Halt condition
-        if (instruction_word == HALT_INSTRUCTION) {
-            // Executor stub handles logging halt message
-            // PC will be updated to next instruction if we don't break immediately
-            // For emulator we want to print state before the PC increments past halt
-            break;
+    
+    // Flag to control the main emulation loop
+    bool running = true;
+    // Store the PC value from the start of the current instruction's execution.
+    // Used to detect if the PC advanced after an instruction.
+    uint64_t prev_pc = arm_state.pc; 
+    
+    while (running && arm_state.pc < MEMORY_SIZE) { // Continue as long as 'running' is true and PC is within memory bounds
+        // Check if the Program Counter is 4-byte aligned
+        if (arm_state.pc % 4 != 0) { 
+             fprintf(stderr, "Error: PC (0x%016"PRIx64") is not 4-byte aligned. Terminating.\n", arm_state.pc);
+             running = false;
+             break; // Exit loop immediately for critical error
         }
- 
-        // TODO: uint32_t decoded_instr_stub = decode_instruction(instruction_word); // Richard's job
-        (void)decode_instruction(instruction_word); //Temporary compilation fix for unused variable
-        // TODO: Prasanna/Zayan's job
-        execute_instruction(&arm_state, instruction_word);
 
-        // The execute_instruction stub currently increments PC.
-        // TODO:  Later, actual branch instructions in execute_instruction will modify PC
-        // TODO: Non-branch instructions will be handled by a default PC increment here
-        // For now the stub executor already does it
+        // Fetch the 32-bit instruction word from memory at the current PC
+        uint32_t instruction_word = read_word_from_memory(&arm_state, arm_state.pc);
+        // Decode the instruction word into its structured representation
+        DecodedInstruction decoded_instr = decode_instruction(instruction_word);
+        
+        // It returns false if the PC should simply be incremented by 4 by the main loop.
+        bool pc_was_modified_by_instruction = execute_instruction(&arm_state, &decoded_instr);
+
+        // After executing the instruction, check if it was the HALT instruction.
+        // We now set the 'running' flag to false to exit the emulation loop.
+        if (decoded_instr.type == HALT) {
+            running = false; 
+        } 
+        // If the instruction did not modify the PC (and it's not HALT), increment PC by 4 to the next instruction.
+        else if (!pc_was_modified_by_instruction) {
+            arm_state.pc += 4;
+        }
+
+        // Detect if the Program Counter has not advanced since the beginning of this instruction's execution.
+        // This catches infinite loops like 'b .' (branch to self) where the PC might get stuck.
+        // This check is only performed if the emulator is still considered 'running' after the instruction.
+        if (running && arm_state.pc == prev_pc) { 
+            fprintf(stderr, "Warning: PC did not advance (0x%016"PRIx64"). Possible infinite loop. Terminating.\n", arm_state.pc);
+            running = false; // Set flag to stop execution
+        }
+        
+        // Update prev_pc for the next iteration.
+        prev_pc = arm_state.pc;
     }
     fprintf(stderr, "Emulation finished.\n");
 
@@ -64,7 +87,6 @@ int main(int argc, char **argv) {
 }
 
 void load_binary_to_memory(const char* filename, ARMState* state) {
-    // Open in binary read mode
     FILE* file = fopen(filename, "rb"); 
     if (!file) {
         fprintf(stderr, "Error: Could not open input file '%s'\n", filename);
@@ -72,18 +94,24 @@ void load_binary_to_memory(const char* filename, ARMState* state) {
     }
 
     // Read the entire file into memory
-    size_t bytes_read = fread(state->memory, 1, sizeof(state->memory), file);
-    if (bytes_read == 0 && !feof(file)) { // Check if it's an actual read error, not just empty file
+    size_t element_size = 1; // Size of each element (1 byte)
+    size_t max_elements_to_read = sizeof(state->memory); // Max total bytes to read
+
+    size_t elements_read = fread(state->memory, element_size, max_elements_to_read, file);
+    size_t bytes_read_total = elements_read * element_size; // Calculate total bytes read
+
+
+    if (elements_read == 0 && !feof(file)) { // Check if it's an actual read error, not just empty file
         fprintf(stderr, "Error: Could not read from input file '%s'\n", filename);
         fclose(file);
         exit(EXIT_FAILURE);
     }
-    if (bytes_read > sizeof(state->memory)) {
+    if (bytes_read_total > sizeof(state->memory)) {
         fprintf(stderr, "Warning: Input file '%s' is larger than 2MB memory capacity. Only first 2MB loaded.\n", filename);
     }
 
     fclose(file);
-    fprintf(stderr, "Loaded %zu bytes from '%s' into memory.\n", bytes_read, filename);
+    fprintf(stderr, "Loaded %zu bytes from '%s' into memory.\n", bytes_read_total, filename);
 }
 
 void print_final_state(ARMState* state, FILE* output_file) {
@@ -103,8 +131,7 @@ void print_final_state(ARMState* state, FILE* output_file) {
         // Read a 32-bit word, then check if it's non-zero
         uint32_t word = read_word_from_memory(state, addr);
         if (word != 0) {
-            fprintf(output_file, "0x%08x: 0x%08x\n", addr, word);
+            fprintf(output_file, "0x%08x: %08x\n", addr, word);
         }
     }
 }
-
