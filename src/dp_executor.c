@@ -69,16 +69,15 @@ static void execute_dp_imm_instruction(ARMState* state, DecodedInstruction* inst
                 case 0x01:  // ADDS
                     result = operand1_val + immediate_val;
                     set_register_value(state, instr->dp_rd, result, sf);
-                    if (instr->dp_opc == 0x01) // if ADDS update PSTATE
-                         update_pstate_flags(state, result, operand1_val, immediate_val, instr);
-                    break; 
-
+                    if (instr->dp_opc == 0x01)  // if ADDS update PSTATE
+                        update_pstate_flags(state, result, operand1_val, immediate_val, instr);
+                    break;
 
                 case 0x02:  // SUB
                 case 0x03:  // SUBS (dp_opc 11 binary is 0x3)
                     result = operand1_val - immediate_val;
                     set_register_value(state, instr->dp_rd, result, sf);
-                    if (instr->dp_opc == 0x03) { // if SUBS update PSTATE
+                    if (instr->dp_opc == 0x03) {  // if SUBS update PSTATE
                         update_pstate_flags(state, result, operand1_val, immediate_val, instr);
                     }
                     break;
@@ -146,13 +145,10 @@ static void execute_dp_reg_instruction(ARMState* state, DecodedInstruction* inst
 
         if (!((instr->dp_reg_opr >> 3) & 0x1)) {  // If bit 3 of opr is 0, it's logical
 
-            bool set_flags = (instr->dp_opc & 0x1);
-            set_flags = (instr->dp_opc & 0x01);  // get S flag (bit 29 of instruction word)
+            bool set_flags = (instr->dp_opc == 3);  // set flags when opc == 11 (ANDS, BICS)
 
-            uint8_t op_code_logical = (instr->dp_opc >> 1);  // Bit 30 of instruction word
-
-            switch (op_code_logical) {  // This is op[0] from the spec (instr bit 30)
-                case 0x00:              // AND, BIC (TST if S=1 and Rd=ZR, ANDS if S=1)
+            switch (instr->dp_opc) {
+                case 0x00:  // AND, BIC (TST if S=1 and Rd=ZR, ANDS if S=1)
                     // N bit (instr->dp_reg_N) determines AND vs BIC
                     result = val_rn & operand2;
                     break;
