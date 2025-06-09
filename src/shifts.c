@@ -117,5 +117,5 @@ uint64_t execute_shift(uint64_t value, uint8_t shift_amount, ShiftType type, boo
             output = perform_ror(value, shift_amount, is_64bit);
             break;
     }
-    return output;
+    return is_64bit ? output : (uint32_t)output;
 }
