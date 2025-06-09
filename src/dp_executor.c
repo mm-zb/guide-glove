@@ -149,6 +149,7 @@ static void execute_dp_reg_instruction(ARMState* state, DecodedInstruction* inst
 
             switch (instr->dp_opc) {
                 case 0x00:  // AND, BIC (TST if S=1 and Rd=ZR, ANDS if S=1)
+                case 0x03:  // ANDS, BICS
                     // N bit (instr->dp_reg_N) determines AND vs BIC
                     result = val_rn & operand2;
                     break;
@@ -173,6 +174,8 @@ static void execute_dp_reg_instruction(ARMState* state, DecodedInstruction* inst
             } else {  // ADD or ADDS
                 result = val_rn + operand2;
             }
+            if (!sf) result = (uint32_t)result;  // For 32-bit, truncate to lower 32 bits
+            
             set_register_value(state, instr->dp_rd, result, sf);
 
             bool set_flags = (instr->dp_opc & 0x01);  // S flag (instr bit 29)
