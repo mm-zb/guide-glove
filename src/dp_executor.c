@@ -149,6 +149,7 @@ static void execute_dp_reg_instruction(ARMState* state, DecodedInstruction* inst
 
             switch (instr->dp_opc) {
                 case 0x00:  // AND, BIC (TST if S=1 and Rd=ZR, ANDS if S=1)
+                case 0x03:  // ANDS, BICS
                     // N bit (instr->dp_reg_N) determines AND vs BIC
                     result = val_rn & operand2;
                     break;
