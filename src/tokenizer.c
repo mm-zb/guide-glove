@@ -7,6 +7,9 @@
 
 #define SPECIAL_CHARS "[],#!"
 
+// TODO: Zayan read the line below:
+// Important: '[' and ']' are received as different tokens - needed for your section
+
 // Helper to check if a character is one of our special single-char tokens
 static int is_special_char(char c) {
     return strchr(SPECIAL_CHARS, c) != NULL;
