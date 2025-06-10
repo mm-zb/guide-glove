@@ -81,3 +81,62 @@ void pass_one(const char* file_in, SymbolTable table) {
     }
     fclose(fp);
 }
+
+void pass_two(const char* file_in, const char* file_out, SymbolTable table) {
+    FILE *in_fp = fopen(file_in, "r");
+    if (in_fp == NULL) { perror("Error opening input file for Pass 2"); exit(EXIT_FAILURE); }
+    
+    FILE *out_fp = fopen(file_out, "wb");
+    if (out_fp == NULL) { perror("Error opening output file"); fclose(in_fp); exit(EXIT_FAILURE); }
+
+    char line[512];
+    uint32_t address = 0;
+
+    while (fgets(line, sizeof(line), in_fp)) {
+        char* label_end = strchr(line, ':');
+        char* instruction_start = line;
+        if (label_end != NULL) {
+            instruction_start = label_end + 1;
+        }
+
+        int token_count = 0;
+        char** tokens = tokenize(instruction_start, &token_count);
+
+        if (token_count == 0) { continue; } // Skip empty lines
+
+        const char* mnemonic = tokens[0];
+        uint32_t instruction_binary = 0;
+        bool is_instruction = true;
+
+        // TODO: 
+        // --- Integration Point for Team ---
+        if (strcmp(mnemonic, "add") == 0 || strcmp(mnemonic, "sub") == 0) { // Add other DP instructions here
+            // instruction_binary = assembleDataProcessing(tokens, token_count);
+            // This is just a placeholder to test the framework
+            instruction_binary = 0xDEADBEEF; // Placeholder for Richard's work
+        } else if (strcmp(mnemonic, "ldr") == 0 || strcmp(mnemonic, "str") == 0) {
+            // instruction_binary = assembleDataTransfer(tokens, token_count, address, table);
+            instruction_binary = 0xCAFEBABE; // Placeholder for other Richard's work
+        } else if (mnemonic[0] == 'b') {
+            // instruction_binary = assembleBranch(tokens, token_count, address, table);
+            instruction_binary = 0xBAADF00D; // Placeholder for Prasanna's work
+        } else if (strcmp(mnemonic, ".int") == 0) {
+            // instruction_binary = assembleDirective(tokens, token_count);
+            is_instruction = false;
+        } else {
+            fprintf(stderr, "Warning: Unknown mnemonic '%s' at address 0x%x\n", mnemonic, address);
+            is_instruction = false;
+        }
+
+        if (is_instruction) {
+             // Write the assembled instruction to the file (little-endian is default on x86)
+            fwrite(&instruction_binary, sizeof(uint32_t), 1, out_fp);
+            address += 4;
+        }
+
+        free_tokens(tokens, token_count);
+    }
+
+    fclose(in_fp);
+    fclose(out_fp);
+}
