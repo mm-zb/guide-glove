@@ -1,0 +1,6 @@
+#ifndef ASSEMBLE_DIRECTIVE_H
+#define ASSEMBLE_DIRECTIVE_H
+
+
+
+#endif
