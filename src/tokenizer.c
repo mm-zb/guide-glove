@@ -1,55 +1,78 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
+
 #include "tokenizer.h"
 
-// Define delimiters that separate tokens
-// This is a crucial part - we want to keep some special chars as tokens themselves
-// A simpler approach for now is to use whitespace and commas as separators
-// This file may need to refine this for addresses like [r1, #4]!
+#define SPECIAL_CHARS "[],#!"
 
-#define DELIMS " ,\t\n"
+// Helper to check if a character is one of our special single-char tokens
+static int is_special_char(char c) {
+    return strchr(SPECIAL_CHARS, c) != NULL;
+}
 
 char** tokenize(const char* line, int* token_count) {
-    char* line_copy = strdup(line);
-    if (!line_copy) {
-        perror("strdup failed in tokenizer");
-        *token_count = 0;
+    *token_count = 0;
+    if (line == NULL) {
         return NULL;
     }
 
-    // First pass to count tokens
-    int count = 0;
-    char* temp_copy = strdup(line); // Need a second copy for counting
-    for (char* token = strtok(temp_copy, DELIMS); token != NULL; token = strtok(NULL, DELIMS)) {
-        count++;
-    }
-    free(temp_copy);
-
-    *token_count = count;
-    if (count == 0) {
-        free(line_copy);
-        return NULL;
-    }
-
-    // Allocate memory for the array of token pointers
-    char** tokens = malloc(count * sizeof(char*));
-    if (!tokens) {
+    // Allocate initial space for token pointers
+    int capacity = 8;
+    char** tokens = malloc(capacity * sizeof(char*));
+    if (tokens == NULL) {
         perror("malloc for tokens failed");
-        free(line_copy);
-        *token_count = 0;
         return NULL;
     }
 
-    // Second pass to actually get and store tokens
-    int i = 0;
-    for (char* token = strtok(line_copy, DELIMS); token != NULL; token = strtok(NULL, DELIMS)) {
-        tokens[i++] = strdup(token);
+    const char* current = line;
+    while (*current != '\0') {
+        // 1. Skip leading whitespace
+        while (isspace((unsigned char)*current)) {
+            current++;
+        }
+        if (*current == '\0') {
+            break; // End of line
+        }
+
+        const char* token_start = current;
+        if (is_special_char(*current)) {
+            // 2. Handle special single-character tokens
+            current++;
+        } else {
+            // 3. Handle regular tokens (mnemonics, registers, numbers, labels)
+            while (*current != '\0' && !isspace((unsigned char)*current) && !is_special_char(*current)) {
+                current++;
+            }
+        }
+
+        // Extract the token
+        int token_len = current - token_start;
+        char* new_token = malloc(token_len + 1);
+        if (new_token == NULL) {
+            perror("malloc for new_token failed");
+            free_tokens(tokens, *token_count);
+            return NULL;
+        }
+        strncpy(new_token, token_start, token_len);
+        new_token[token_len] = '\0';
+        
+        // Add token to our list, reallocating if necessary
+        if (*token_count >= capacity) {
+            capacity *= 2;
+            char** new_tokens = realloc(tokens, capacity * sizeof(char*));
+            if (new_tokens == NULL) {
+                perror("realloc for tokens failed");
+                free(new_token);
+                free_tokens(tokens, *token_count);
+                return NULL;
+            }
+            tokens = new_tokens;
+        }
+        tokens[*token_count] = new_token;
+        (*token_count)++;
     }
-    
-    // strtok modifies line_copy, so we free the original pointer. 
-    // The memory for the tokens themselves is now pointed to by our 'tokens' array.
-    free(line_copy);
 
     return tokens;
 }
