@@ -127,7 +127,10 @@ void pass_two(const char* file_in, const char* file_out, SymbolTable table) {
 
         // Create pointers to the part of the token list that is the actual instruction
         char** instruction_tokens = &tokens[instruction_token_start_index];
+
         int instruction_token_count = token_count - instruction_token_start_index;
+        // Code below to avoid unused variable compile warnings
+        (void) instruction_token_count; 
 
         const char* mnemonic = instruction_tokens[0];
         uint32_t binary_word = 0;
