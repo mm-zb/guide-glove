@@ -13,7 +13,7 @@
 uint32_t assembleDataProcessing(char** tokens, int token_count);
 uint32_t assembleDataTransfer(char** tokens, int token_count, uint32_t current_address, SymbolTable table);
 uint32_t assembleBranch(char** tokens, int token_count, uint32_t current_address, SymbolTable table);
-uint32_t assembleDirective(char** tokens, int token_count);
+uint32_t assembleDirective(char** tokens, int token_count); //TODO: Zayan write this
 
 void pass_one(const char* file_in, SymbolTable table);
 void pass_two(const char* file_in, const char* file_out, SymbolTable table);
@@ -100,50 +100,60 @@ void pass_two(const char* file_in, const char* file_out, SymbolTable table) {
     FILE *out_fp = fopen(file_out, "wb");
     if (out_fp == NULL) { perror("Error opening output file"); fclose(in_fp); exit(EXIT_FAILURE); }
 
-    char line[512];
+    char line_buffer[512];
     uint32_t address = 0;
 
-    while (fgets(line, sizeof(line), in_fp)) {
-        char* label_end = strchr(line, ':');
-        char* instruction_start = line;
-        if (label_end != NULL) {
-            instruction_start = label_end + 1;
-        }
-
+    while (fgets(line_buffer, sizeof(line_buffer), in_fp)) {
         int token_count = 0;
-        char** tokens = tokenize(instruction_start, &token_count);
+        char** tokens = tokenize(line_buffer, &token_count);
 
-        if (token_count == 0) { continue; } // Skip empty lines
+        if (token_count == 0) { // Skip empty lines
+            free_tokens(tokens, token_count);
+            continue;
+        }
 
-        const char* mnemonic = tokens[0];
-        uint32_t instruction_binary = 0;
-        bool is_instruction = true;
+        // Determine where the actual instruction/directive starts
+        // This is important for lines that have a label
+        int instruction_token_start_index = 0;
+        if (tokens[0][strlen(tokens[0]) - 1] == ':') {
+            instruction_token_start_index = 1;
+        }
 
-        // TODO: 
-        // --- Integration Point for Team ---
-        if (strcmp(mnemonic, "add") == 0 || strcmp(mnemonic, "sub") == 0) { // Add other DP instructions here
-            // instruction_binary = assembleDataProcessing(tokens, token_count);
-            // This is just a placeholder to test the framework
-            instruction_binary = 0xDEADBEEF; // Placeholder for Richard's work
+        // If the line was just a label then there's nothing to assemble
+        if (instruction_token_start_index >= token_count) {
+            free_tokens(tokens, token_count);
+            continue;
+        }
+
+        // Create pointers to the part of the token list that is the actual instruction
+        char** instruction_tokens = &tokens[instruction_token_start_index];
+        int instruction_token_count = token_count - instruction_token_start_index;
+
+        const char* mnemonic = instruction_tokens[0];
+        uint32_t binary_word = 0;
+        
+        // TODO: --- Integration Point for Team ---
+        if (strcmp(mnemonic, ".int") == 0) {
+            // Handle the .int directive directly here.
+            binary_word = (uint32_t)strtol(instruction_tokens[1], NULL, 0); // Base 0 auto-detects hex
+        } else if (strcmp(mnemonic, "add") == 0 || strcmp(mnemonic, "sub") == 0 /* ... more DP checks */) {
+            // binary_word = assembleDataProcessing(instruction_tokens, instruction_token_count);
+            binary_word = 0xDEADBEEF; // Placeholder for Richard's work
         } else if (strcmp(mnemonic, "ldr") == 0 || strcmp(mnemonic, "str") == 0) {
-            // instruction_binary = assembleDataTransfer(tokens, token_count, address, table);
-            instruction_binary = 0xCAFEBABE; // Placeholder for other Richard's work
+            // binary_word = assembleDataTransfer(instruction_tokens, instruction_token_count, address, table);
+            binary_word = 0xCAFEBABE; // Placeholder for Zayan's work
         } else if (mnemonic[0] == 'b') {
-            // instruction_binary = assembleBranch(tokens, token_count, address, table);
-            instruction_binary = 0xBAADF00D; // Placeholder for Prasanna's work
-        } else if (strcmp(mnemonic, ".int") == 0) {
-            // instruction_binary = assembleDirective(tokens, token_count);
-            is_instruction = false;
+            // binary_word = assembleBranch(instruction_tokens, instruction_token_count, address, table);
+            binary_word = 0xBAADF00D; // Placeholder for Prasanna's work
         } else {
-            fprintf(stderr, "Warning: Unknown mnemonic '%s' at address 0x%x\n", mnemonic, address);
-            is_instruction = false;
+            fprintf(stderr, "Warning: Unknown mnemonic '%s' at address 0x%x. Skipping line.\n", mnemonic, address);
+            free_tokens(tokens, token_count);
+            continue; // Don't write anything for unknown instructions
         }
 
-        if (is_instruction) {
-             // Write the assembled instruction to the file (little-endian is default on x86)
-            fwrite(&instruction_binary, sizeof(uint32_t), 1, out_fp);
-            address += 4;
-        }
+        // Write the assembled 32-bit word to the file in little-endian
+        fwrite(&binary_word, sizeof(uint32_t), 1, out_fp);
+        address += 4;
 
         free_tokens(tokens, token_count);
     }
