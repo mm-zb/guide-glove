@@ -46,3 +46,38 @@ int main(int argc, char **argv) {
     symbol_table_free(table);
     return EXIT_SUCCESS;
 }
+
+
+void pass_one(const char* file_in, SymbolTable table) {
+    FILE *fp = fopen(file_in, "r");
+    if (fp == NULL) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
+
+    char line[512];
+    uint32_t address = 0;
+
+    while (fgets(line, sizeof(line), fp)) {
+        // Find if there's a ':' for a label
+        char* label_end = strchr(line, ':');
+        if (label_end != NULL) {
+            *label_end = '\0'; // Terminate the string at the colon
+            printf("Found label '%s' at address 0x%x\n", line, address);
+            symbol_table_add(table, line, address);
+            // NOTE: A label can be on the same line as an instruction.
+            // For simplicity, we assume labels are on their own line for now.
+            // If the rest of the line isn't empty, it's an instruction.
+            if (strlen(label_end + 1) > 2) { // check for more than just newline/whitespace
+                 address += 4;
+            }
+        } else {
+            // It might be an instruction. Ignore empty/whitespace lines.
+            char* trimmed_line = strtok(line, " \t\n");
+            if (trimmed_line != NULL) {
+                address += 4;
+            }
+        }
+    }
+    fclose(fp);
+}
