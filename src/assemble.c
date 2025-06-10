@@ -19,5 +19,30 @@ void pass_one(const char* file_in, SymbolTable table);
 void pass_two(const char* file_in, const char* file_out, SymbolTable table);
 
 int main(int argc, char **argv) {
-  return EXIT_SUCCESS;
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <input_file.s> <output_file.bin>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    const char* file_in = argv[1];
+    const char* file_out = argv[2];
+
+    SymbolTable table = symbol_table_create();
+    if (table == NULL) {
+        perror("Failed to create symbol table");
+        return EXIT_FAILURE;
+    }
+
+    // Pass 1: Build the symbol table
+    printf("--- Starting Pass 1 ---\n");
+    pass_one(file_in, table);
+    printf("--- Finished Pass 1 ---\n");
+
+    // Pass 2: Generate the binary code
+    printf("--- Starting Pass 2 ---\n");
+    pass_two(file_in, file_out, table);
+    printf("--- Finished Pass 2 ---\n");
+
+    symbol_table_free(table);
+    return EXIT_SUCCESS;
 }
