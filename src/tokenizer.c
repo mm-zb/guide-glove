@@ -47,8 +47,8 @@ char** tokenize(const char* line, int* token_count) {
         tokens[i++] = strdup(token);
     }
     
-    // strtok modifies line_copy, so we free the original pointer. The memory for the tokens themselves
-    // is now pointed to by our 'tokens' array.
+    // strtok modifies line_copy, so we free the original pointer. 
+    // The memory for the tokens themselves is now pointed to by our 'tokens' array.
     free(line_copy);
 
     return tokens;
