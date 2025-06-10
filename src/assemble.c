@@ -55,29 +55,40 @@ void pass_one(const char* file_in, SymbolTable table) {
         exit(EXIT_FAILURE);
     }
 
-    char line[512];
+    char line_buffer[512];
     uint32_t address = 0;
 
-    while (fgets(line, sizeof(line), fp)) {
-        // Find if there's a ':' for a label
-        char* label_end = strchr(line, ':');
-        if (label_end != NULL) {
-            *label_end = '\0'; // Terminate the string at the colon
-            printf("Found label '%s' at address 0x%x\n", line, address);
-            symbol_table_add(table, line, address);
-            // NOTE: A label can be on the same line as an instruction.
-            // For simplicity, we assume labels are on their own line for now.
-            // If the rest of the line isn't empty, it's an instruction.
-            if (strlen(label_end + 1) > 2) { // check for more than just newline/whitespace
-                 address += 4;
-            }
-        } else {
-            // It might be an instruction. Ignore empty/whitespace lines.
-            char* trimmed_line = strtok(line, " \t\n");
-            if (trimmed_line != NULL) {
-                address += 4;
+    while (fgets(line_buffer, sizeof(line_buffer), fp)) {
+        int token_count = 0;
+        char** tokens = tokenize(line_buffer, &token_count);
+
+        if (token_count == 0) { // Skip empty or whitespace-only lines
+            free_tokens(tokens, token_count);
+            continue;
+        }
+
+        // Check if the first token is a label (ends with ':')
+        char* first_token = tokens[0];
+        int len = strlen(first_token);
+        if (first_token[len - 1] == ':') {
+            // It's a label so add it to the symbol table with the current address
+            first_token[len - 1] = '\0'; // Remove the ':' to get the clean label name
+            printf("Found label '%s' at address 0x%x\n", first_token, address);
+            symbol_table_add(table, first_token, address);
+
+            // If the line ONLY contained a label, it doesn't take up space
+            // If there's an instruction on the same line, we'll increment the address below
+            if (token_count == 1) {
+                free_tokens(tokens, token_count);
+                continue;
             }
         }
+        
+        // If we reach here, the line contains an instruction or directive that takes up space
+        // This could be a standalone instruction, or an instruction after a label
+        address += 4; // All instructions and directives in our spec are 4 bytes
+
+        free_tokens(tokens, token_count);
     }
     fclose(fp);
 }
