@@ -51,4 +51,7 @@ uint32_t assemble_ldr(char** tokens, SymbolTable* symbol_table, uint32_t current
 uint32_t assemble_str(char** tokens, SymbolTable* symbol_table, uint32_t current_address);
 uint32_t assemble_directive(char** tokens, SymbolTable* symbol_table, uint32_t current_address);
 
+// Helper
+uint32_t assemble_loadstore(char** tokens, SymbolTable* symbol_table, uint32_t current_address, bool is_ldr);
+
 #endif

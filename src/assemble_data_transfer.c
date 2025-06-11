@@ -18,6 +18,21 @@ static bool is_sdt(AddressingMode mode) {
 
 uint32_t assemble_ldr(char** tokens, SymbolTable* symbol_table, uint32_t current_address) {
     uint32_t instruction = 0;
+    instruction = assemble_loadstore(tokens, symbol_table, current_address, true); 
+    // is_ldr is set to true
+    return instruction;
+}
+
+uint32_t assemble_str(char** tokens, SymbolTable* symbol_table, uint32_t current_address) {
+    uint32_t instruction = 0;
+    instruction = assemble_loadstore(tokens, symbol_table, current_address, false); 
+    // is_ldr is set to false
+    return instruction;
+}
+
+uint32_t assemble_loadstore(char** tokens, SymbolTable* symbol_table, uint32_t current_address, bool is_ldr) {
+
+    uint32_t instruction = 0;
     ParsedAddress address;
     
     AddressingMode mode;
@@ -26,8 +41,8 @@ uint32_t assemble_ldr(char** tokens, SymbolTable* symbol_table, uint32_t current
     uint32_t xm;
     uint32_t sf;
     uint32_t imm12; 
-    int32_t simm9; 
-    int32_t simm19;
+    uint32_t simm9; // Unsigned as we want our shifting to be logical not arithmetic
+    uint32_t simm19;
 
     // Initialising variables and shifting to correct locations
     address = parse_address(tokens, symbol_table, current_address);
@@ -42,7 +57,9 @@ uint32_t assemble_ldr(char** tokens, SymbolTable* symbol_table, uint32_t current
 
     // Constructing binary instruction
     instruction |= rt; 
-    instruction |= SDT_L; // As load instruction
+    if (is_ldr) {
+        instruction |= SDT_L; // Add load bit
+    }
     if (is_sdt(mode)) {
         instruction |= SDT_BASE;
         instruction |= xn;
