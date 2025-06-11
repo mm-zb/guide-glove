@@ -9,7 +9,7 @@ CFLAGS  ?= -std=c17 -g\
 
 all: assemble emulate
 
-ASS_SRCS = assemble.c tokenizer.c symbol_table.c
+ASS_SRCS = assemble.c tokenizer.c symbol_table.c assemble_dp.c
 ASS_OBJS = $(ASS_SRCS:.c=.o)
 
 assemble: $(ASS_OBJS)
