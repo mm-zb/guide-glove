@@ -231,8 +231,12 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_
                 exit(1);
         }
     } else { // ldr rt, <literal>
-        // could be label or hashtag
-        ll_simm19 = (int32_t)atoi(tokens[3]);
+        char *literal = tokens[3];
+        if (symbol_table_get(symbol_table, literal, &ll_simm19)) {
+            // Not a label, so parse as a literal int
+            ll_simm19 = (int32_t)atoi(literal);
+        }
+        
     }
     
     ParsedAddress address = {
@@ -243,7 +247,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_
         .sdt_ll_sf = sdt_ll_sf,
         .sdt_imm12 = sdt_imm12,
         .sdt_simm9 = sdt_simm9,
-        .ll_simm19 = ll_simm19,
+        .ll_simm19 = (int32_t)ll_simm19, // Need this cast as symbol_table_get modifies to unsigned
         // Trailing comma included for future changes' git history
     };
     return address;
