@@ -45,7 +45,7 @@ typedef struct {
 
 // Parse address to populate ParsedAddress struct
 ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address);
-AddressingMode get_addressing_mode(char** tokens, int token_count);
+AddressingMode get_addressing_mode(char** tokens, int token_count, int lbrace, int rbrace, int hashtag);
 
 // Highest level call
 uint32_t assemble_ldr(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address);
