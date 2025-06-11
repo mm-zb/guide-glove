@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <stdlib.h>
+#include <assert.h>
 
 #include "assemble_data_transfer.h"
 
@@ -16,21 +18,21 @@ static bool is_sdt(AddressingMode mode) {
     // Pre-condition of valid addressing mode
 }
 
-uint32_t assemble_ldr(char** tokens, SymbolTable* symbol_table, uint32_t current_address) {
+uint32_t assemble_ldr(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
     uint32_t instruction = 0;
-    instruction = assemble_loadstore(tokens, symbol_table, current_address, true); 
+    instruction = assemble_loadstore(tokens, token_count, symbol_table, current_address, true); 
     // is_ldr is set to true
     return instruction;
 }
 
-uint32_t assemble_str(char** tokens, SymbolTable* symbol_table, uint32_t current_address) {
+uint32_t assemble_str(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
     uint32_t instruction = 0;
-    instruction = assemble_loadstore(tokens, symbol_table, current_address, false); 
+    instruction = assemble_loadstore(tokens, token_count, symbol_table, current_address, false); 
     // is_ldr is set to false
     return instruction;
 }
 
-uint32_t assemble_loadstore(char** tokens, SymbolTable* symbol_table, uint32_t current_address, bool is_ldr) {
+uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address, bool is_ldr) {
 
     uint32_t instruction = 0;
     ParsedAddress address;
@@ -45,7 +47,7 @@ uint32_t assemble_loadstore(char** tokens, SymbolTable* symbol_table, uint32_t c
     uint32_t simm19;
 
     // Initialising variables and shifting to correct locations
-    address = parse_address(tokens, symbol_table, current_address);
+    address = parse_address(tokens, token_count, symbol_table, current_address);
     mode = address.mode;
     rt = address.sdt_ll_reg_rt; // No shift
     xn = address.sdt_reg_xn << XN_START_BIT;
@@ -105,4 +107,73 @@ uint32_t assemble_loadstore(char** tokens, SymbolTable* symbol_table, uint32_t c
     }
 
     return instruction;
+}
+
+AddressingMode get_addressing_mode(char** tokens, int token_count) {
+    AddressingMode mode;
+    int open_br = -1;
+    int closed_br = -1;
+
+    // Find the index of the closed and open brackets, which surround the address
+    for (int i = 0; i < token_count; i++) {
+        if (strcmp(tokens[i], "[") == 0) {
+            open_br = i;
+        }
+        if (strcmp(tokens[i], "]") == 0) {
+            closed_br = i;
+        }
+    }
+
+    if (closed_br <= open_br) { 
+        // Malformed address, error
+        exit(1);
+    }
+
+    if (open_br == -1) { // No brackets found
+        mode = LOAD_LITERAL;
+    } else if (closed_br + 1 < token_count && strcmp(tokens[closed_br + 1], "!") == 0) {
+        mode = PRE_INDEXED;
+    } else if (closed_br == token_count - 1) { // Unsigned immediate or register
+        // Check if hashtag in our function
+        bool contains_hashtag = false;
+
+        for (int i = open_br; i < closed_br; i++) {
+            if (strcmp(tokens[i], "#") == 0) {
+                contains_hashtag = true;
+            } 
+        }
+        contains_hashtag ? (mode = UNSIGNED_OFFSET) : (mode = REGISTER_OFFSET);
+    } else if (closed_br + 1 < token_count && strcmp(tokens[closed_br + 1], ",") == 0 &&
+               closed_br + 2 < token_count && strcmp(tokens[closed_br + 2], "#") == 0) {
+        mode = POST_INDEXED;
+    } else { 
+        // Malformed address, error
+        exit(1);
+    }
+
+    if (mode == UNSIGNED_OFFSET && closed_br - open_br == 2) {
+        mode = ZERO_OFFSET;
+    }
+
+    return mode;
+}
+
+ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
+    AddressingMode mode;
+    uint32_t sdt_ll_reg_rt;
+    uint32_t sdt_reg_xn;
+    uint32_t sdt_reg_xm;
+    bool sdt_ll_sf;
+    uint32_t sdt_imm12;
+    int32_t sdt_simm9;
+    int32_t ll_simm19;
+
+    mode = get_addressing_mode(tokens, token_count);
+
+    // TODO: FINISH parsing logic
+    
+    ParsedAddress address = {
+        // .mode = UNSIGNED_OFFSET
+    };
+    return address;
 }
