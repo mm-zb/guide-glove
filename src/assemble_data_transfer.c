@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "assemble_data_transfer.h"
 
@@ -22,21 +23,21 @@ static bool is_sdt(AddressingMode mode) {
     // Pre-condition of valid addressing mode
 }
 
-uint32_t assemble_ldr(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
+uint32_t assemble_ldr(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address) {
     uint32_t instruction = 0;
     instruction = assemble_loadstore(tokens, token_count, symbol_table, current_address, true); 
     // is_ldr is set to true
     return instruction;
 }
 
-uint32_t assemble_str(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
+uint32_t assemble_str(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address) {
     uint32_t instruction = 0;
     instruction = assemble_loadstore(tokens, token_count, symbol_table, current_address, false); 
     // is_ldr is set to false
     return instruction;
 }
 
-uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address, bool is_ldr) {
+uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address, bool is_ldr) {
 
     uint32_t instruction = 0;
     ParsedAddress address;
@@ -113,7 +114,7 @@ uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable* symbol_
     return instruction;
 }
 
-uint32_t assemble_directive(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
+uint32_t assemble_directive(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address) {
     //tokens = [".int", x]
     assert(strcmp(tokens[0], ".int") == 0);
     assert(token_count == 2);
@@ -170,7 +171,7 @@ AddressingMode get_addressing_mode(char** tokens, int token_count, int lbrace, i
     return mode;
 }
 
-ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
+ParsedAddress parse_address(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address) {
     AddressingMode mode;
     uint32_t sdt_ll_reg_rt = 0;
     uint32_t sdt_reg_xn = 0;
@@ -178,7 +179,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_
     bool sdt_ll_sf = false;
     uint32_t sdt_imm12 = 0;
     int32_t sdt_simm9 = 0;
-    int32_t ll_simm19 = 0;
+    uint32_t ll_simm19 = 0; // Has to be unsigned due to specific implementation of symbol_table_get()
 
     int lbrace = -1;
     int rbrace = -1;
@@ -234,9 +235,8 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_
         char *literal = tokens[3];
         if (symbol_table_get(symbol_table, literal, &ll_simm19)) {
             // Not a label, so parse as a literal int
-            ll_simm19 = (int32_t)atoi(literal);
+            ll_simm19 = (uint32_t)atoi(literal);
         }
-        
     }
     
     ParsedAddress address = {
