@@ -1,8 +1,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "assemble_data_transfer.h"
+
+// Defines macro for error reporting
+#define STRINGIFY(var) #var
 
 // Defines shift amounts for each section of the instruction
 #define XN_START_BIT 5
@@ -109,49 +113,37 @@ uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable* symbol_
     return instruction;
 }
 
-AddressingMode get_addressing_mode(char** tokens, int token_count) {
-    AddressingMode mode;
-    int open_br = -1;
-    int closed_br = -1;
+AddressingMode get_addressing_mode(char** tokens, int token_count, int lbrace, int rbrace, int hashtag) {
+    AddressingMode mode; 
 
-    // Find the index of the closed and open brackets, which surround the address
-    for (int i = 0; i < token_count; i++) {
-        if (strcmp(tokens[i], "[") == 0) {
-            open_br = i;
-        }
-        if (strcmp(tokens[i], "]") == 0) {
-            closed_br = i;
-        }
-    }
-
-    if (closed_br <= open_br) { 
-        // Malformed address, error
-        exit(1);
-    }
-
-    if (open_br == -1) { // No brackets found
+    if (lbrace == -1) { // No brackets found
         mode = LOAD_LITERAL;
-    } else if (closed_br + 1 < token_count && strcmp(tokens[closed_br + 1], "!") == 0) {
+    } else if (rbrace + 1 < token_count && strcmp(tokens[rbrace + 1], "!") == 0) {
         mode = PRE_INDEXED;
-    } else if (closed_br == token_count - 1) { // Unsigned immediate or register
+    } else if (rbrace == token_count - 1) { // Unsigned immediate or register
         // Check if hashtag in our function
         bool contains_hashtag = false;
 
-        for (int i = open_br; i < closed_br; i++) {
+        // We have the precondition that lbrace < hashtag < rbrace 
+        // as it was asserted before this function was called
+        for (int i = lbrace; i < rbrace; i++) {
             if (strcmp(tokens[i], "#") == 0) {
                 contains_hashtag = true;
             } 
         }
+
+
         contains_hashtag ? (mode = UNSIGNED_OFFSET) : (mode = REGISTER_OFFSET);
-    } else if (closed_br + 1 < token_count && strcmp(tokens[closed_br + 1], ",") == 0 &&
-               closed_br + 2 < token_count && strcmp(tokens[closed_br + 2], "#") == 0) {
+    } else if (rbrace + 1 < token_count && strcmp(tokens[rbrace + 1], ",") == 0 &&
+               rbrace + 2 < token_count && strcmp(tokens[rbrace + 2], "#") == 0) {
         mode = POST_INDEXED;
     } else { 
         // Malformed address, error
+        fprintf(stderr, "Malformed address");
         exit(1);
     }
 
-    if (mode == UNSIGNED_OFFSET && closed_br - open_br == 2) {
+    if (mode == UNSIGNED_OFFSET && rbrace - lbrace == 2) {
         mode = ZERO_OFFSET;
     }
 
@@ -160,20 +152,79 @@ AddressingMode get_addressing_mode(char** tokens, int token_count) {
 
 ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
     AddressingMode mode;
-    uint32_t sdt_ll_reg_rt;
-    uint32_t sdt_reg_xn;
-    uint32_t sdt_reg_xm;
-    bool sdt_ll_sf;
-    uint32_t sdt_imm12;
-    int32_t sdt_simm9;
-    int32_t ll_simm19;
+    uint32_t sdt_ll_reg_rt = 0;
+    uint32_t sdt_reg_xn = 0;
+    uint32_t sdt_reg_xm = 0;
+    bool sdt_ll_sf = false;
+    uint32_t sdt_imm12 = 0;
+    int32_t sdt_simm9 = 0;
+    int32_t ll_simm19 = 0;
 
-    mode = get_addressing_mode(tokens, token_count);
+    int lbrace = -1;
+    int rbrace = -1;
+    int hashtag = -1;
 
-    // TODO: FINISH parsing logic
+    for (int i = 0; i < token_count; i++) {
+        if (strcmp(tokens[i], "[") == 0) {
+            lbrace = i;
+        }
+        if (strcmp(tokens[i], "]") == 0) {
+            rbrace = i;
+        }
+        if (strcmp(tokens[i], "#") == 0) {
+            hashtag = i;
+        }
+    }
+
+    assert(hashtag == -1 || (lbrace < hashtag && hashtag < rbrace));
+
+    mode = get_addressing_mode(tokens, token_count, lbrace, rbrace, hashtag);
+
+    // Parsing address for relevant members 
+    sdt_ll_reg_rt = (uint32_t)atoi(tokens[1]);
+    sdt_ll_sf = (tokens[1][0] == 'x'); // Checks if rt is an X register
+    if (is_sdt(mode)) { 
+        assert(lbrace != -1);
+        assert(rbrace != -1);
+        assert(lbrace < rbrace);
+
+        sdt_reg_xn = (uint32_t)atoi(tokens[lbrace + 1]);
+        
+        // Populating addressing mode-specific fields
+        uint32_t imm = atoi(tokens[hashtag + 1]);
+        switch (mode) {
+            case ZERO_OFFSET:
+                break;
+            case UNSIGNED_OFFSET:
+                (sdt_ll_sf) ? (sdt_imm12 = (uint32_t)(imm / 8)) : (sdt_imm12 = (uint32_t)(imm / 4));
+                break;
+            case PRE_INDEXED:
+            case POST_INDEXED:
+                sdt_simm9 = atoi(tokens[hashtag + 1]);
+                break;
+            case REGISTER_OFFSET:
+                sdt_reg_xm = (uint32_t)atoi(tokens[rbrace - 1]);
+                break;
+            default:
+                // Invalid addressing mode
+                fprintf(stderr, "Addressing mode %s is invalid", STRINGIFY(mode));
+                exit(1);
+        }
+    } else { // ldr rt, <literal>
+        // could be label or hashtag
+        ll_simm19 = (int32_t)atoi(tokens[3]);
+    }
     
     ParsedAddress address = {
-        // .mode = UNSIGNED_OFFSET
+        .mode = mode,
+        .sdt_ll_reg_rt = sdt_ll_reg_rt,
+        .sdt_reg_xn = sdt_reg_xn,
+        .sdt_reg_xm = sdt_reg_xm,
+        .sdt_ll_sf = sdt_ll_sf,
+        .sdt_imm12 = sdt_imm12,
+        .sdt_simm9 = sdt_simm9,
+        .ll_simm19 = ll_simm19,
+        // Trailing comma included for future changes' git history
     };
     return address;
 }
