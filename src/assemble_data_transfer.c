@@ -132,7 +132,6 @@ AddressingMode get_addressing_mode(char** tokens, int token_count, int lbrace, i
             } 
         }
 
-
         contains_hashtag ? (mode = UNSIGNED_OFFSET) : (mode = REGISTER_OFFSET);
     } else if (rbrace + 1 < token_count && strcmp(tokens[rbrace + 1], ",") == 0 &&
                rbrace + 2 < token_count && strcmp(tokens[rbrace + 2], "#") == 0) {
@@ -203,7 +202,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_
                 sdt_simm9 = atoi(tokens[hashtag + 1]);
                 break;
             case REGISTER_OFFSET:
-                sdt_reg_xm = (uint32_t)atoi(tokens[rbrace - 1]);
+                sdt_reg_xm = (uint32_t)atoi(tokens[lbrace + 3]);
                 break;
             default:
                 // Invalid addressing mode
