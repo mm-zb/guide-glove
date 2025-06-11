@@ -1,10 +1,10 @@
 #ifndef ASSEMBLE_DATA_TRANSFER_H
 #define ASSEMBLE_DATA_TRANSFER_H
 
+#include <stdint.h>
+
 #include "symbol_table.h"
 #include "tokenizer.h"
-
-#include <stdint.h>
 
 // Adding the below in the correct combination, along with the other relevant
 // components will give the final binary instruction
@@ -35,11 +35,10 @@ typedef struct {
     int32_t sdt_imm12; 
     uint32_t sdt_simm9;
     uint32_t ll_simm19;
-    uint32_t sdt_offset;   
 } ParsedAddress;
 
 // Parse address to populate ParsedAddress struct
-ParsedAddress parse_address(char** tokens);
+ParsedAddress parse_address(char** tokens, SymbolTable* symbol_table, uint32_t current_address);
 
 // Highest level call
 uint32_t assemble_ldr(char** tokens, SymbolTable* symbol_table, uint32_t current_address);
