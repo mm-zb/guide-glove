@@ -113,6 +113,27 @@ uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable* symbol_
     return instruction;
 }
 
+uint32_t assemble_directive(char** tokens, int token_count, SymbolTable* symbol_table, uint32_t current_address) {
+    //tokens = [".int", x]
+    assert(strcmp(tokens[0], ".int") == 0);
+    assert(token_count == 2);
+
+    const char *value = tokens[1]; // Designating as const to keep read only
+    uint32_t directive_value;
+    if (!symbol_table_get(symbol_table, value, &directive_value)) {
+        // Not in symbol table, so numeric literal
+        if (strlen(value) > 2 && value[0] == '0' && (value[1] == 'x' || value[1] == 'X')) {
+            // Hex so need to ignore the "0x" prefix of the string, and then convert
+            directive_value = (uint32_t)strtoul(value + 2, NULL, 16);
+        } else {
+            // Assume decimal (and not a different base system)
+            directive_value = (uint32_t)atoi(value);
+        }
+    }
+
+    return directive_value;
+}
+
 AddressingMode get_addressing_mode(char** tokens, int token_count, int lbrace, int rbrace, int hashtag) {
     AddressingMode mode; 
 
@@ -138,7 +159,7 @@ AddressingMode get_addressing_mode(char** tokens, int token_count, int lbrace, i
         mode = POST_INDEXED;
     } else { 
         // Malformed address, error
-        fprintf(stderr, "Malformed address");
+        fprintf(stderr, "Malformed address\n");
         exit(1);
     }
 
@@ -206,7 +227,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable* symbol_
                 break;
             default:
                 // Invalid addressing mode
-                fprintf(stderr, "Addressing mode %s is invalid", STRINGIFY(mode));
+                fprintf(stderr, "Addressing mode %s is invalid\n", STRINGIFY(mode));
                 exit(1);
         }
     } else { // ldr rt, <literal>
