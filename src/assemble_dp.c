@@ -239,12 +239,15 @@ static uint32_t assemble_logical(char** tokens, int token_count, bool is_64bit) 
     return instruction_word;
 }
 
-static uint32_t assemble_movx(char** tokens, int token_count) {
-    // Example implementation for move extended mnemonics
-    uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
-    // Parse tokens and set opcode accordingly
-    // This is a placeholder; actual implementation will depend on the specific mnemonic
-    return opcode;
+// tst rn, <op2> == ands rzr, rn, <op2>
+static uint32_t assemble_tst(char** tokens, int token_count, bool is_64bit) {
+    // Populate new tokens to handle the alias
+    char* aliased_tokens[token_count + 1];
+    aliased_tokens[0] = "ands";
+    aliased_tokens[1] = is_64bit ? "xzr" : "wzr";
+    for (int i = 2; i < token_count; i++) aliased_tokens[i] = tokens[i - 1];
+
+    return assemble_logical(aliased_tokens, token_count + 1, is_64bit);
 }
 
 static uint32_t assemble_mov(char** tokens, int token_count) {
