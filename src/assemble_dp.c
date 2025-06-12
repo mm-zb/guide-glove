@@ -80,7 +80,7 @@ uint32_t assembleDataProcessing(char** tokens, int token_count) {
     }
 
     char* mnemonic = tokens[0];
-    bool is_64bit = tokens[0][0] == 'x';
+    bool is_64bit = tokens[1][0] == 'x';
 
     // Parse the mnemonic and registers
     switch (get_mnemonic_type(mnemonic)) {
