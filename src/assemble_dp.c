@@ -305,12 +305,27 @@ static uint32_t assemble_mvn(char** tokens, int token_count, bool is_64bit) {
     return assemble_logical(aliased_tokens, token_count + 1, is_64bit);
 }
 
-static uint32_t assemble_m_arith(char** tokens, int token_count) {
-    // Example implementation for multiply and arithmetic mnemonics
-    uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
-    // Parse tokens and set opcode accordingly
-    // This is a placeholder; actual implementation will depend on the specific mnemonic
-    return opcode;
+// madd, msub
+static uint32_t assemble_m_arith(char** tokens, int token_count, bool is_64bit) {
+    uint32_t instruction_word = 0;
+
+    uint8_t sf = is_64bit ? 1 : 0;
+    uint8_t rd = get_register_number(tokens[1]);
+    uint8_t rn = get_register_number(tokens[2]);
+    uint8_t rm = get_register_number(tokens[3]);
+    uint8_t ra = get_register_number(tokens[4]);
+    uint8_t x = (strcmp(tokens[0], "madd") == 0) ? 0 : 1;  // x = 0 for madd, 1 for msub
+
+    // Set the instruction word bits
+    set_bits(&instruction_word, 31, 31, sf);
+    set_bits(&instruction_word, 21, 30, 0xD8);  // bits 30-21 = 00 1101 1000 for M_ARITH
+    set_bits(&instruction_word, 16, 20, rm);
+    set_bits(&instruction_word, 15, 15, x);  // bit 20 = x
+    set_bits(&instruction_word, 10, 14, ra);
+    set_bits(&instruction_word, 5, 9, rn);
+    set_bits(&instruction_word, 0, 4, rd);
+
+    return instruction_word;
 }
 
 static uint32_t assemble_mul(char** tokens, int token_count) {
