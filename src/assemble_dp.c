@@ -190,20 +190,53 @@ static uint32_t assemble_neg(char** tokens, int token_count, bool is_64bit) {
 }
 
 // and, ands, bic, bics, orr, orn, eor, eon
-static uint32_t assemble_logical(char** tokens, int token_count) {
-    // Example implementation for logical mnemonics
-    uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
-    // Parse tokens and set opcode accordingly
-    // This is a placeholder; actual implementation will depend on the specific mnemonic
-    return opcode;
-}
+static uint32_t assemble_logical(char** tokens, int token_count, bool is_64bit) {
+    uint32_t instruction_word = 0;
 
-static uint32_t assemble_tst(char** tokens, int token_count) {
-    // Example implementation for test mnemonics
-    uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
-    // Parse tokens and set opcode accordingly
-    // This is a placeholder; actual implementation will depend on the specific mnemonic
-    return opcode;
+    uint8_t sf = is_64bit ? 1 : 0;
+    uint8_t rd = get_register_number(tokens[1]);
+    uint8_t rn = get_register_number(tokens[2]);
+    uint8_t rm = get_register_number(tokens[3]);
+    // Determine opc and N based on the mnemonic
+    // The LSB of opc_N determines N, the rest determines opc
+    uint8_t opc_N = 0;
+    if (strcmp(tokens[0], "and") == 0)
+        opc_N = 0;
+    else if (strcmp(tokens[0], "bic") == 0)
+        opc_N = 1;
+    else if (strcmp(tokens[0], "orr") == 0)
+        opc_N = 2;
+    else if (strcmp(tokens[0], "orn") == 0)
+        opc_N = 3;
+    else if (strcmp(tokens[0], "eor") == 0)
+        opc_N = 4;
+    else if (strcmp(tokens[0], "eon") == 0)
+        opc_N = 5;
+    else if (strcmp(tokens[0], "ands") == 0)
+        opc_N = 6;
+    else if (strcmp(tokens[0], "bics") == 0)
+        opc_N = 7;
+    uint8_t opc = opc_N >> 1;  // Get the opcode bits
+    uint8_t N = opc_N & 1;     // Get the N bit
+
+    // Set the instruction word bits
+    set_bits(&instruction_word, 31, 31, sf);
+    set_bits(&instruction_word, 29, 30, opc);
+    // bit 28 (M) is 0 for logical operations
+    set_bits(&instruction_word, 25, 27, 5);  // bits 27-25 = 101 for DP_REG
+    set_bits(&instruction_word, 21, 21, N);
+    set_bits(&instruction_word, 16, 20, rm);
+    set_bits(&instruction_word, 5, 9, rn);
+    set_bits(&instruction_word, 0, 4, rd);
+    // Handle shift if provided
+    if (token_count == 6) {
+        uint8_t shift_type = get_shift_type(tokens[4]);
+        uint8_t shift_amt = get_immediate_value(tokens[5]);
+        set_bits(&instruction_word, 22, 23, shift_type);
+        set_bits(&instruction_word, 10, 15, shift_amt);
+    }
+
+    return instruction_word;
 }
 
 static uint32_t assemble_movx(char** tokens, int token_count) {
