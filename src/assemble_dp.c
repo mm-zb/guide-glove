@@ -123,15 +123,14 @@ static uint32_t assemble_arithmetic(char** tokens, int token_count, bool is_64bi
     // Set the instruction word bits
     set_bits(&instruction_word, 31, 31, sf);
     set_bits(&instruction_word, 29, 30, opc);
-    // bit 28 (M) is 0 for arithmetic operations
     set_bits(&instruction_word, 5, 9, rn);
     set_bits(&instruction_word, 0, 4, rd);
 
-    // Handle DP_IMM vs DP_REG to set the remaining bits
+    // Handle DP_IMM vs DP_REG to set the remaining bits 10-28
     bool is_imm = tokens[3][0] == '#';  // Check if the fourth token is an immediate value
     if (is_imm) {
         uint16_t imm12 = get_immediate_value(tokens[3]);
-        set_bits(&instruction_word, 26, 28, 3);  // bits 28-26 = 100 hard-coded for DP_IMM
+        set_bits(&instruction_word, 26, 28, 4);  // bits 28-26 = 100 hard-coded for DP_IMM
         set_bits(&instruction_word, 23, 25, 2);  // opi = 010 for arithmetic operations
         set_bits(&instruction_word, 10, 21, imm12);
         // If shift provided and shift amount is 12, set the sh bit
@@ -139,8 +138,9 @@ static uint32_t assemble_arithmetic(char** tokens, int token_count, bool is_64bi
             set_bits(&instruction_word, 22, 22, 1);
         }
     } else {
-        set_bits(&instruction_word, 24, 27, 11);  // bits 27-24 = 1011 for ARITHMETIC DP_REG
         uint8_t rm = get_register_number(tokens[3]);
+        set_bits(&instruction_word, 24, 28, 11);  // bits 28-24 = 01011 for ARITHMETIC DP_REG
+        // bit 21 is 0 for arithmetic operations
         set_bits(&instruction_word, 16, 20, rm);
         // Handle shift if provided
         if (token_count == 6) {
@@ -160,15 +160,10 @@ static uint32_t assemble_cmp(char** tokens, int token_count, bool is_64bit) {
     // Populate new tokens to handle the alias
     char* aliased_tokens[token_count + 1];
     aliased_tokens[1] = is_64bit ? "xzr" : "wzr";
-    for (int i = 2; i < token_count; i++) aliased_tokens[i] = tokens[i - 1];
+    for (int i = 2; i <= token_count; i++) aliased_tokens[i] = tokens[i - 1];
 
-    if (strcmp(tokens[0], "cmp") == 0) {
-        aliased_tokens[0] = "subs";
-        return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
-    } else {
-        aliased_tokens[0] = "adds";
-        return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
-    }
+    aliased_tokens[0] = (strcmp(tokens[0], "cmp") == 0) ? "subs" : "adds";
+    return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
 }
 
 // neg(s) rd, <op2> == sub(s) rd, rzr, <op2>
@@ -179,13 +174,8 @@ static uint32_t assemble_neg(char** tokens, int token_count, bool is_64bit) {
     aliased_tokens[2] = is_64bit ? "xzr" : "wzr";
     for (int i = 3; i < token_count; i++) aliased_tokens[i] = tokens[i - 1];
 
-    if (strcmp(tokens[0], "neg") == 0) {
-        aliased_tokens[0] = "sub";
-        return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
-    } else {
-        aliased_tokens[0] = "subs";
-        return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
-    }
+    aliased_tokens[0] = (strcmp(tokens[0], "neg") == 0) ? "sub" : "subs";
+    return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
 }
 
 // and, ands, bic, bics, orr, orn, eor, eon
@@ -221,12 +211,12 @@ static uint32_t assemble_logical(char** tokens, int token_count, bool is_64bit) 
     // Set the instruction word bits
     set_bits(&instruction_word, 31, 31, sf);
     set_bits(&instruction_word, 29, 30, opc);
-    // bit 28 (M) is 0 for logical operations
-    set_bits(&instruction_word, 25, 27, 5);  // bits 27-25 = 101 for DP_REG
+    set_bits(&instruction_word, 25, 28, 5);  // bits 28-25 = 0101 for DP_REG
     set_bits(&instruction_word, 21, 21, N);
     set_bits(&instruction_word, 16, 20, rm);
     set_bits(&instruction_word, 5, 9, rn);
     set_bits(&instruction_word, 0, 4, rd);
+
     // Handle shift if provided
     if (token_count == 6) {
         uint8_t shift_type = get_shift_type(tokens[4]);
@@ -244,7 +234,7 @@ static uint32_t assemble_tst(char** tokens, int token_count, bool is_64bit) {
     char* aliased_tokens[token_count + 1];
     aliased_tokens[0] = "ands";
     aliased_tokens[1] = is_64bit ? "xzr" : "wzr";
-    for (int i = 2; i < token_count; i++) aliased_tokens[i] = tokens[i - 1];
+    for (int i = 2; i <= token_count; i++) aliased_tokens[i] = tokens[i - 1];
 
     return assemble_logical(aliased_tokens, token_count + 1, is_64bit);
 }
@@ -299,7 +289,7 @@ static uint32_t assemble_mvn(char** tokens, int token_count, bool is_64bit) {
     aliased_tokens[0] = "orn";
     aliased_tokens[1] = tokens[1];  // rd
     aliased_tokens[2] = is_64bit ? "xzr" : "wzr";
-    for (int i = 3; i < token_count; i++) aliased_tokens[i] = tokens[i - 1];
+    for (int i = 3; i <= token_count; i++) aliased_tokens[i] = tokens[i - 1];
 
     return assemble_logical(aliased_tokens, token_count + 1, is_64bit);
 }
@@ -332,14 +322,10 @@ static uint32_t assemble_m_arith(char** tokens, int token_count, bool is_64bit) 
 static uint32_t assemble_mul(char** tokens, int token_count, bool is_64bit) {
     // Populate new tokens to handle the alias
     char* aliased_tokens[token_count + 1];
-    aliased_tokens[token_count] = is_64bit ? "xzr" : "wzr";
     for (int i = 1; i < token_count; i++) aliased_tokens[i] = tokens[i];
+    aliased_tokens[token_count] = is_64bit ? "xzr" : "wzr";
 
-    if (strcmp(tokens[0], "mul") == 0)
-        aliased_tokens[0] = "madd";  // Use madd for multiplication
-    else
-        aliased_tokens[0] = "msub";  // Use msub for mneg
-
+    aliased_tokens[0] = (strcmp(tokens[0], "mul") == 0) ? "madd" : "msub";
     return assemble_m_arith(aliased_tokens, token_count + 1, is_64bit);
 }
 
@@ -368,13 +354,12 @@ static mnemonic_type get_mnemonic_type(char* mnemonic) {
 }
 
 static uint32_t get_immediate_value(char* token) {
-    return strtol(token + 1, NULL, 10);  // Skip the '#' prefix and convert to integer
+    return strtol(token + 1, NULL, 0);  // Skip the '#' prefix and convert to integer
 }
 
 static uint8_t get_register_number(char* reg) {
-    if (strcmp(reg + 1, "zr") == 0 || strcmp(reg + 1, "sp") == 0)
-        return 31;                     // Special case for ZR/SP
-    return strtol(reg + 1, NULL, 10);  // Skip the 'x' or 'w' prefix
+    if (strcmp(reg + 1, "zr") == 0) return 31;  // Special case for ZR/SP
+    return strtol(reg + 1, NULL, 10);           // Skip the 'x' or 'w' prefix
 }
 
 static uint8_t get_shift_type(char* shift) {
