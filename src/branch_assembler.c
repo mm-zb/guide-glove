@@ -88,6 +88,7 @@ uint32_t assemble_br_register(char** tokens, int token_count) {
 uint32_t assemble_b_conditional(char** tokens, int token_count, uint32_t current_address, SymbolTable table) {
     if (token_count != 2) {
         fprintf(stderr, "Error (assemble_b_conditional): Expected 2 tokens for 'b.cond <target>' (e.g., b.eq mylabel), got %d.\n", token_count);
+        exit(1);
         return 0; // Error
     }
 
@@ -137,6 +138,65 @@ uint32_t assemble_b_conditional(char** tokens, int token_count, uint32_t current
     uint32_t instruction = (opcode_b_cond_fixed_part << 24)
                          | ((simm19_val & 0x0007FFFF) << 5) // Mask to 19 bits and shift
                          | (cond_code & 0xF);               // Mask to 4 bits
+
+    return instruction;
+}
+
+
+// --- Implementation of assemble_b_literal ---
+// Assembles: b <label_or_immediate_offset>
+// Instruction Format (Unconditional branch immediate):
+// 31-26   | 25-0
+// 000101  | simm26 (PC-relative word offset)
+uint32_t assemble_b_literal(char** tokens, int token_count, uint32_t current_address, SymbolTable table) {
+    if (token_count != 2) {
+        fprintf(stderr, "Error (assemble_b_literal): Expected 2 tokens for 'b <target>' (e.g., b mylabel), got %d.\n", token_count);
+        return 0; // Error
+    }
+
+    const char* target_str = tokens[1];
+    uint32_t target_address;
+    int32_t offset_bytes;
+
+    // Check if target_str is a numeric literal (e.g. #0x20, #32) or a label
+    if (target_str[0] == '#') {
+        char* endptr;
+        // strtol with base 0 auto-detects 0x for hex, 0 for octal, else decimal
+        offset_bytes = (int32_t)strtol(target_str + 1, &endptr, 0);
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error (assemble_b_literal): Invalid immediate offset format '%s'.\n", target_str);
+            return 0;
+        }
+    } else {
+        // It's a label
+        if (!symbol_table_get(table, target_str, &target_address)) {
+            fprintf(stderr, "Error (assemble_b_literal): Label '%s' not found in symbol table.\n", target_str);
+            return 0; // Error
+        }
+        offset_bytes = (int32_t)target_address - (int32_t)current_address;
+    }
+
+
+    // The simm26 field is a PC-relative *word* offset (instruction offset)
+    // The offset is sign-extended from 26 bits to the full width of the PC.
+    // offset_bytes must be a multiple of 4.
+    if (offset_bytes % 4 != 0) {
+        fprintf(stderr, "Error (assemble_b_literal): Branch offset (0x%x bytes) for '%s' is not 4-byte aligned.\n", offset_bytes, target_str);
+        return 0;
+    }
+    int32_t simm26_val = offset_bytes / 4;
+
+    // Check if simm26_val fits in 26 bits (signed: -(2^25) to (2^25)-1 )
+    int32_t max_simm26 = (1 << 25) - 1;  // 2^(26-1) - 1
+    int32_t min_simm26 = -(1 << 25);     // -2^(26-1)
+    if (simm26_val < min_simm26 || simm26_val > max_simm26) {
+        fprintf(stderr, "Error (assemble_b_literal): Offset %d for label '%s' is out of range for simm26.\n", simm26_val * 4, target_str);
+        return 0;
+    }
+
+    // Opcode for 'b' (unconditional immediate) is 000101
+    uint32_t opcode_b = 0b000101;
+    uint32_t instruction = (opcode_b << 26) | (simm26_val & 0x03FFFFFF); // Mask to 26 bits
 
     return instruction;
 }
