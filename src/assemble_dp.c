@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -328,12 +327,20 @@ static uint32_t assemble_m_arith(char** tokens, int token_count, bool is_64bit) 
     return instruction_word;
 }
 
-static uint32_t assemble_mul(char** tokens, int token_count) {
-    // Example implementation for multiply mnemonics
-    uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
-    // Parse tokens and set opcode accordingly
-    // This is a placeholder; actual implementation will depend on the specific mnemonic
-    return opcode;
+// mul rd, rn, rm == madd rd, rn, rm, rzr
+// mneg rd, rn, rm == msub rd, rn, rm, rzr
+static uint32_t assemble_mul(char** tokens, int token_count, bool is_64bit) {
+    // Populate new tokens to handle the alias
+    char* aliased_tokens[token_count + 1];
+    aliased_tokens[token_count] = is_64bit ? "xzr" : "wzr";
+    for (int i = 1; i < token_count; i++) aliased_tokens[i] = tokens[i];
+
+    if (strcmp(tokens[0], "mul") == 0)
+        aliased_tokens[0] = "madd";  // Use madd for multiplication
+    else
+        aliased_tokens[0] = "msub";  // Use msub for mneg
+
+    return assemble_m_arith(aliased_tokens, token_count + 1, is_64bit);
 }
 
 // --- HELPER FUNCTIONS ---
