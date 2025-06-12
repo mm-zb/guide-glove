@@ -145,9 +145,27 @@ void pass_two(const char* file_in, const char* file_out, SymbolTable table) {
         } else if (strcmp(mnemonic, "ldr") == 0 || strcmp(mnemonic, "str") == 0) {
             // binary_word = assembleDataTransfer(instruction_tokens, instruction_token_count, address, table);
             binary_word = 0xCAFEBABE; // Placeholder for Zayan's work
-        } else if (mnemonic[0] == 'b') {
-            // binary_word = assembleBranch(instruction_tokens, instruction_token_count, address, table);
-            binary_word = 0xBAADF00D; // Placeholder for Prasanna's work
+        } else if (strcmp(mnemonic, "b") == 0) {
+            // Unconditional branch to literal
+            //TODO calculute current_instruction_address to be passed in below:
+            //binary_word = assemble_b_literal(instruction_tokens, instruction_token_count, current_instruction_address, table);
+            if (binary_word == 0) { // Assuming 0 indicates an assembly error from your function
+                fprintf(stderr, "Error assembling 'b' instruction for line: %s", line_buffer); // line_buffer has the current line
+                // Potentially set a flag to indicate assembly failure for this line or the whole file
+            }
+        } else if (strcmp(mnemonic, "br") == 0) {
+            // Branch to register
+            binary_word = assemble_br_register(instruction_tokens, instruction_token_count);
+            if (binary_word == 0) {
+                fprintf(stderr, "Error assembling 'br' instruction for line: %s", line_buffer);
+            }
+        } else if (strncmp(mnemonic, "b.", 2) == 0) {
+            // Conditional branch (e.g., "b.eq", "b.ne")
+            //TODO calculute current_instruction_address to be passed in below:
+            //binary_word = assemble_b_conditional(instruction_tokens, instruction_token_count, current_instruction_address, table);
+            if (binary_word == 0) {
+                fprintf(stderr, "Error assembling conditional branch '%s' for line: %s", mnemonic, line_buffer);
+            }
         } else {
             fprintf(stderr, "Warning: Unknown mnemonic '%s' at address 0x%x. Skipping line.\n", mnemonic, address);
             free_tokens(tokens, token_count);
