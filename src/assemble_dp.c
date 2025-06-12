@@ -250,12 +250,35 @@ static uint32_t assemble_tst(char** tokens, int token_count, bool is_64bit) {
     return assemble_logical(aliased_tokens, token_count + 1, is_64bit);
 }
 
-static uint32_t assemble_mov(char** tokens, int token_count) {
-    // Example implementation for move mnemonics
-    uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
-    // Parse tokens and set opcode accordingly
-    // This is a placeholder; actual implementation will depend on the specific mnemonic
-    return opcode;
+// movn, movz, movk
+static uint32_t assemble_movx(char** tokens, int token_count, bool is_64bit) {
+    uint32_t instruction_word = 0;  // Set appropriate instruction_word based on mnemonic
+
+    uint8_t sf = is_64bit ? 1 : 0;
+    uint8_t rd = get_register_number(tokens[1]);
+    uint16_t imm16 = get_immediate_value(tokens[2]);
+    uint8_t opc = 0;  // movn
+    if (strcmp(tokens[0], "movz") == 0)
+        opc = 2;  // opc = 10
+    else if (strcmp(tokens[0], "movk") == 0)
+        opc = 3;  // opc = 11
+
+    // Set the instruction word bits
+    set_bits(&instruction_word, 31, 31, sf);
+    set_bits(&instruction_word, 29, 30, opc);
+    set_bits(&instruction_word, 26, 28, 4);  // bits 28-26 = 100 for DP_IMM
+    set_bits(&instruction_word, 23, 25, 5);  // opi = 101 for movX
+    set_bits(&instruction_word, 5, 20, imm16);
+    set_bits(&instruction_word, 0, 4, rd);
+
+    // Handle shift if provided
+    if (token_count == 5) {
+        uint8_t shift_amount = get_immediate_value(tokens[4]);
+        uint8_t hw = shift_amount >> 4;
+        set_bits(&instruction_word, 21, 22, hw);
+    }
+
+    return instruction_word;
 }
 
 static uint32_t assemble_mvn(char** tokens, int token_count) {
