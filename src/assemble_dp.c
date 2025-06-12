@@ -173,14 +173,23 @@ static uint32_t assemble_cmp(char** tokens, int token_count, bool is_64bit) {
 }
 
 // neg(s) rd, <op2> == sub(s) rd, rzr, <op2>
-static uint32_t assemble_neg(char** tokens, int token_count) {
-    // Example implementation for negation mnemonics
-    uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
-    // Parse tokens and set opcode accordingly
-    // This is a placeholder; actual implementation will depend on the specific mnemonic
-    return opcode;
+static uint32_t assemble_neg(char** tokens, int token_count, bool is_64bit) {
+    // Populate new tokens to handle the alias
+    char* aliased_tokens[token_count + 1];
+    aliased_tokens[1] = tokens[1];
+    aliased_tokens[2] = is_64bit ? "xzr" : "wzr";
+    for (int i = 3; i < token_count; i++) aliased_tokens[i] = tokens[i - 1];
+
+    if (strcmp(tokens[0], "neg") == 0) {
+        aliased_tokens[0] = "sub";
+        return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
+    } else {
+        aliased_tokens[0] = "subs";
+        return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
+    }
 }
 
+// and, ands, bic, bics, orr, orn, eor, eon
 static uint32_t assemble_logical(char** tokens, int token_count) {
     // Example implementation for logical mnemonics
     uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
