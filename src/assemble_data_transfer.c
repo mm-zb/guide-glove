@@ -16,6 +16,11 @@
 #define SIMM9_START_BIT 12
 #define SIMM19_START_BIT 5
 
+#define MIN_19_BITS -262144
+#define MAX_19_BITS 262143
+#define MASK_9_BIT 0x1FF
+#define MASK_19_BIT 0x7FFFF
+
 // Helper to check the addressing mode class
 static bool is_sdt(AddressingMode mode) {
     return (mode != LOAD_LITERAL);
@@ -23,21 +28,38 @@ static bool is_sdt(AddressingMode mode) {
     // Pre-condition of valid addressing mode
 }
 
-uint32_t assemble_ldr(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address) {
+// Helper to parse registers and remove prefixes
+static uint32_t parse_register(const char* reg_str) {
+    if (reg_str[0] == 'x' || reg_str[0] == 'w' || reg_str[0] == 'X' || reg_str[0] == 'W') {
+        // Check for 'zr' case
+        if ((reg_str[1] == 'z' || reg_str[1] == 'Z') && (reg_str[2] == 'r' || reg_str[2] == 'R') ) {
+            return 31; // xzr/wzr are always register 31
+        }
+        // Parse number after 'x' or 'w'
+        int reg_num = atoi(reg_str + 1);
+        if (reg_num >= 0 && reg_num <= 30) { // Registers 0-30
+            return (uint32_t)reg_num;
+        }
+    }
+    fprintf(stderr, "Error: Invalid register name '%s'\n", reg_str);
+    exit(1);
+}
+
+uint32_t assemble_ldr(char** tokens, int token_count, SymbolTable *symbol_table, uint32_t current_address) {
     uint32_t instruction = 0;
     instruction = assemble_loadstore(tokens, token_count, symbol_table, current_address, true); 
     // is_ldr is set to true
     return instruction;
 }
 
-uint32_t assemble_str(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address) {
+uint32_t assemble_str(char** tokens, int token_count, SymbolTable *symbol_table, uint32_t current_address) {
     uint32_t instruction = 0;
     instruction = assemble_loadstore(tokens, token_count, symbol_table, current_address, false); 
     // is_ldr is set to false
     return instruction;
 }
 
-uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address, bool is_ldr) {
+uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable *symbol_table, uint32_t current_address, bool is_ldr) {
 
     uint32_t instruction = 0;
     ParsedAddress address;
@@ -59,8 +81,8 @@ uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable symbol_t
     xm = address.sdt_reg_xm << XM_START_BIT;
     sf = address.sdt_ll_sf; // Boolean so no shift
     imm12 = address.sdt_imm12 << IMM12_START_BIT;
-    simm9 = address.sdt_simm9 << SIMM9_START_BIT;
-    simm19 = address.ll_simm19 << SIMM19_START_BIT;
+    simm9 = (uint32_t)(address.sdt_simm9 & MASK_9_BIT) << SIMM9_START_BIT;
+    simm19 = (uint32_t)(address.ll_simm19 & MASK_19_BIT) << SIMM19_START_BIT;
 
     // Constructing binary instruction
     instruction |= rt; 
@@ -114,14 +136,14 @@ uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable symbol_t
     return instruction;
 }
 
-uint32_t assemble_directive(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address) {
+uint32_t assemble_directive(char** tokens, int token_count, SymbolTable *symbol_table) {
     //tokens = [".int", x]
     assert(strcmp(tokens[0], ".int") == 0);
     assert(token_count == 2);
 
     const char *value = tokens[1]; // Designating as const to keep read only
     uint32_t directive_value;
-    if (!symbol_table_get(symbol_table, value, &directive_value)) {
+    if (!symbol_table_get(*symbol_table, value, &directive_value)) {
         // Not in symbol table, so numeric literal
         if (strlen(value) > 2 && value[0] == '0' && (value[1] == 'x' || value[1] == 'X')) {
             // Hex so need to ignore the "0x" prefix of the string, and then convert
@@ -171,7 +193,7 @@ AddressingMode get_addressing_mode(char** tokens, int token_count, int lbrace, i
     return mode;
 }
 
-ParsedAddress parse_address(char** tokens, int token_count, SymbolTable symbol_table, uint32_t current_address) {
+ParsedAddress parse_address(char** tokens, int token_count, SymbolTable *symbol_table, uint32_t current_address) {
     AddressingMode mode;
     uint32_t sdt_ll_reg_rt = 0;
     uint32_t sdt_reg_xn = 0;
@@ -179,7 +201,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable symbol_t
     bool sdt_ll_sf = false;
     uint32_t sdt_imm12 = 0;
     int32_t sdt_simm9 = 0;
-    uint32_t ll_simm19 = 0; // Has to be unsigned due to specific implementation of symbol_table_get()
+    int32_t ll_simm19 = 0;
 
     int lbrace = -1;
     int rbrace = -1;
@@ -202,14 +224,14 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable symbol_t
     mode = get_addressing_mode(tokens, token_count, lbrace, rbrace, hashtag);
 
     // Parsing address for relevant members 
-    sdt_ll_reg_rt = (uint32_t)atoi(tokens[1]);
-    sdt_ll_sf = (tokens[1][0] == 'x'); // Checks if rt is an X register
+    sdt_ll_reg_rt = (uint32_t)parse_register(tokens[1]);
+    sdt_ll_sf = (tokens[1][0] == 'x' || tokens[1][0] == 'X'); // Checks if rt is an X register
     if (is_sdt(mode)) { 
         assert(lbrace != -1);
         assert(rbrace != -1);
         assert(lbrace < rbrace);
 
-        sdt_reg_xn = (uint32_t)atoi(tokens[lbrace + 1]);
+        sdt_reg_xn = (uint32_t)parse_register(tokens[lbrace + 1]);
         
         // Populating addressing mode-specific fields
         uint32_t imm = atoi(tokens[hashtag + 1]);
@@ -224,7 +246,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable symbol_t
                 sdt_simm9 = atoi(tokens[hashtag + 1]);
                 break;
             case REGISTER_OFFSET:
-                sdt_reg_xm = (uint32_t)atoi(tokens[lbrace + 3]);
+                sdt_reg_xm = (uint32_t)parse_register(tokens[lbrace + 3]);
                 break;
             default:
                 // Invalid addressing mode
@@ -233,10 +255,16 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable symbol_t
         }
     } else { // ldr rt, <literal>
         char *literal = tokens[3];
-        if (symbol_table_get(symbol_table, literal, &ll_simm19)) {
+        uint32_t target_absolute_address;
+        int32_t raw_offset;
+        if (!symbol_table_get(*symbol_table, literal, &target_absolute_address)) {
             // Not a label, so parse as a literal int
-            ll_simm19 = (uint32_t)atoi(literal);
+            target_absolute_address = (uint32_t)atoi(literal);
         }
+        raw_offset = (int32_t)target_absolute_address - (int32_t)current_address;
+        assert(raw_offset % 4 == 0);
+        ll_simm19 = raw_offset / 4;
+        assert(ll_simm19 >= MIN_19_BITS && ll_simm19 <= MAX_19_BITS);
     }
     
     ParsedAddress address = {
