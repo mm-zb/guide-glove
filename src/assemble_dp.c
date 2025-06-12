@@ -81,68 +81,78 @@ uint32_t assembleDataProcessing(char** tokens, int token_count) {
     }
 
     char* mnemonic = tokens[0];
-    uint32_t opcode = 0;  // Set based on the mnemonic
-    uint32_t rd = 0;      // Destination register
-    uint32_t rn = 0;      // First operand register
-    uint32_t rm = 0;      // Second operand register
-
-    bool is_immediate = tokens[1][0] == '#' || tokens[2][0] == '#';
     bool is_64bit = tokens[0][0] == 'x';
 
     // Parse the mnemonic and registers
     switch (get_mnemonic_type(mnemonic)) {
         case ARITH:
-            opcode = assemble_arithmetic(tokens, token_count);
-            break;
+            return assemble_arithmetic(tokens, token_count, is_64bit);
         case CMP:
-            opcode = assemble_cmp(tokens, token_count);
-            break;
+            return assemble_cmp(tokens, token_count, is_64bit);
         case NEG:
-            opcode = assemble_neg(tokens, token_count);
-            break;
+            return assemble_neg(tokens, token_count, is_64bit);
         case LOGICAL:
-            opcode = assemble_logical(tokens, token_count);
-            break;
+            return assemble_logical(tokens, token_count, is_64bit);
         case TST:
-            opcode = assemble_tst(tokens, token_count);
-            break;
+            return assemble_tst(tokens, token_count, is_64bit);
         case MOVX:
-            opcode = assemble_movx(tokens, token_count);
-            break;
+            return assemble_movx(tokens, token_count, is_64bit);
         case MOV:
-            opcode = assemble_mov(tokens, token_count);
-            break;
+            return assemble_mov(tokens, token_count, is_64bit);
         case MVN:
-            opcode = assemble_mvn(tokens, token_count);
-            break;
+            return assemble_mvn(tokens, token_count, is_64bit);
         case M_ARITH:
-            opcode = assemble_m_arith(tokens, token_count);
-            break;
+            return assemble_m_arith(tokens, token_count, is_64bit);
         case MUL:
-            opcode = assemble_mul(tokens, token_count);
-            break;
+            return assemble_mul(tokens, token_count, is_64bit);
         default:
             fprintf(stderr, "Error: Invalid mnemonic '%s'.\n", mnemonic);
             return 0;
     }
-
-    // Extract registers from tokens
-    rd = atoi(tokens[1] + 1);  // Assuming tokens[1] is like "x0"
-    rn = atoi(tokens[2] + 1);  // Assuming tokens[2] is like "x1"
-    rm = atoi(tokens[3] + 1);  // Assuming tokens[3] is like "x2"
-
-    // Construct the binary instruction
-    uint32_t instruction = (opcode << 24) | (rd << 20) | (rn << 16) | rm;
-
-    return instruction;
 }
 
-static uint32_t assemble_arithmetic(char** tokens, int token_count) {
-    // Example implementation for arithmetic mnemonics
-    uint32_t opcode = 0;  // Set appropriate opcode based on mnemonic
-    // Parse tokens and set opcode accordingly
-    // This is a placeholder; actual implementation will depend on the specific mnemonic
-    return opcode;
+// add, adds, sub, subs
+static uint32_t assemble_arithmetic(char** tokens, int token_count, bool is_64bit) {
+    uint32_t instruction_word = 0;
+
+    uint8_t sf = is_64bit ? 1 : 0;
+    uint8_t opc = strncmp(tokens[0], "add", 3) == 0 ? 0 : 2;  // 00 for ADD, 10 for SUB
+    if (tokens[0][3] == 's') opc++;                           // 01 for ADDS, 11 for SUBS
+    uint8_t rd = get_register_number(tokens[1]);
+    uint8_t rn = get_register_number(tokens[2]);
+
+    // Set the instruction word bits
+    set_bits(&instruction_word, 31, 31, sf);
+    set_bits(&instruction_word, 29, 30, opc);
+    // bit 28 (M) is 0 for arithmetic operations
+    set_bits(&instruction_word, 5, 9, rn);
+    set_bits(&instruction_word, 0, 4, rd);
+
+    // Handle DP_IMM vs DP_REG to set the remaining bits
+    bool is_imm = tokens[3][0] == '#';  // Check if the fourth token is an immediate value
+    if (is_imm) {
+        uint16_t imm12 = get_immediate_value(tokens[3]);
+        set_bits(&instruction_word, 26, 28, 3);  // bits 28-26 = 100 hard-coded for DP_IMM
+        set_bits(&instruction_word, 23, 25, 2);  // opi = 010 for arithmetic operations
+        set_bits(&instruction_word, 10, 21, imm12);
+        // If shift provided and shift amount is 12, set the sh bit
+        if (token_count == 6 && get_immediate_value(tokens[5]) == 12) {
+            set_bits(&instruction_word, 22, 22, 1);
+        }
+    } else {
+        set_bits(&instruction_word, 24, 27, 11);  // bits 27-24 = 1011 for ARITHMETIC DP_REG
+        uint8_t rm = get_register_number(tokens[3]);
+        set_bits(&instruction_word, 16, 20, rm);
+        // Handle shift if provided
+        if (token_count == 6) {
+            uint8_t shift_type = get_shift_type(tokens[4]);
+            uint8_t shift_amt = get_immediate_value(tokens[5]);
+            set_bits(&instruction_word, 22, 23, shift_type);  // bits 23-22 = shift type
+            set_bits(&instruction_word, 10, 15, shift_amt);
+        }
+    }
+
+    return instruction_word;
 }
 
 static uint32_t assemble_cmp(char** tokens, int token_count) {
