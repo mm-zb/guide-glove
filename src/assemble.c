@@ -147,8 +147,7 @@ void pass_two(const char* file_in, const char* file_out, SymbolTable table) {
             binary_word = 0xCAFEBABE; // Placeholder for Zayan's work
         } else if (strcmp(mnemonic, "b") == 0) {
             // Unconditional branch to literal
-            //TODO calculute current_instruction_address to be passed in below:
-            //binary_word = assemble_b_literal(instruction_tokens, instruction_token_count, current_instruction_address, table);
+            binary_word = assemble_b_literal(instruction_tokens, instruction_token_count, address, table);
             if (binary_word == 0) { // Assuming 0 indicates an assembly error from your function
                 fprintf(stderr, "Error assembling 'b' instruction for line: %s", line_buffer); // line_buffer has the current line
                 // Potentially set a flag to indicate assembly failure for this line or the whole file
@@ -161,8 +160,7 @@ void pass_two(const char* file_in, const char* file_out, SymbolTable table) {
             }
         } else if (strncmp(mnemonic, "b.", 2) == 0) {
             // Conditional branch (e.g., "b.eq", "b.ne")
-            //TODO calculute current_instruction_address to be passed in below:
-            //binary_word = assemble_b_conditional(instruction_tokens, instruction_token_count, current_instruction_address, table);
+            binary_word = assemble_b_conditional(instruction_tokens, instruction_token_count, address, table);
             if (binary_word == 0) {
                 fprintf(stderr, "Error assembling conditional branch '%s' for line: %s", mnemonic, line_buffer);
             }
