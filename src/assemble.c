@@ -19,8 +19,8 @@ void pass_two(const char* file_in, const char* file_out, SymbolTable table);
 
 const char* dp_mnemonics_c[] = {
     "add", "adds", "and", "ands", "bic", "bics", "cmn", "cmp",
-    "eon", "eor", "madd", "mov", "movk", "movn", "movz", "mul",
-    "mvn", "neg", "negs", "orr", "orn", "sub", "subs", "tst",
+    "eon", "eor", "madd", "mneg", "mov", "movk", "movn", "movz", "msub",
+    "mul", "mvn", "neg", "negs", "orn", "orr", "sub", "subs", "tst",
 };
 
 const size_t NUM_DP_MNEMONICS = sizeof(dp_mnemonics_c) / sizeof(dp_mnemonics_c[0]);

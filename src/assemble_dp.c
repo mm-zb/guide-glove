@@ -118,7 +118,7 @@ static uint32_t assemble_arithmetic(char** tokens, int token_count, bool is_64bi
     uint8_t opc = strncmp(tokens[0], "add", 3) == 0 ? 0 : 2;  // 00 for ADD, 10 for SUB
     if (tokens[0][3] == 's') opc++;                           // 01 for ADDS, 11 for SUBS
     uint8_t rd = get_register_number(tokens[1]);
-    uint8_t rn = get_register_number(tokens[2]);
+    uint8_t rn = get_register_number(tokens[3]);
 
     // Set the instruction word bits
     set_bits(&instruction_word, 31, 31, sf);
@@ -127,25 +127,25 @@ static uint32_t assemble_arithmetic(char** tokens, int token_count, bool is_64bi
     set_bits(&instruction_word, 0, 4, rd);
 
     // Handle DP_IMM vs DP_REG to set the remaining bits 10-28
-    bool is_imm = tokens[3][0] == '#';  // Check if the fourth token is an immediate value
+    bool is_imm = tokens[5][0] == '#';  // Check if the fourth token is an immediate value
     if (is_imm) {
-        uint16_t imm12 = get_immediate_value(tokens[3]);
+        uint16_t imm12 = get_immediate_value(tokens[6]);
         set_bits(&instruction_word, 26, 28, 4);  // bits 28-26 = 100 hard-coded for DP_IMM
         set_bits(&instruction_word, 23, 25, 2);  // opi = 010 for arithmetic operations
         set_bits(&instruction_word, 10, 21, imm12);
         // If shift provided and shift amount is 12, set the sh bit
-        if (token_count == 6 && get_immediate_value(tokens[5]) == 12) {
+        if (token_count == 11 && get_immediate_value(tokens[10]) == 12) {
             set_bits(&instruction_word, 22, 22, 1);
         }
     } else {
-        uint8_t rm = get_register_number(tokens[3]);
+        uint8_t rm = get_register_number(tokens[5]);
         set_bits(&instruction_word, 24, 28, 11);  // bits 28-24 = 01011 for ARITHMETIC DP_REG
         // bit 21 is 0 for arithmetic operations
         set_bits(&instruction_word, 16, 20, rm);
         // Handle shift if provided
-        if (token_count == 6) {
-            uint8_t shift_type = get_shift_type(tokens[4]);
-            uint8_t shift_amt = get_immediate_value(tokens[5]);
+        if (token_count == 10) {
+            uint8_t shift_type = get_shift_type(tokens[7]);
+            uint8_t shift_amt = get_immediate_value(tokens[9]);
             set_bits(&instruction_word, 22, 23, shift_type);  // bits 23-22 = shift type
             set_bits(&instruction_word, 10, 15, shift_amt);
         }
@@ -158,24 +158,27 @@ static uint32_t assemble_arithmetic(char** tokens, int token_count, bool is_64bi
 // cmn rn, <op2> == adds rzr, rn, <op2>
 static uint32_t assemble_cmp(char** tokens, int token_count, bool is_64bit) {
     // Populate new tokens to handle the alias
-    char* aliased_tokens[token_count + 1];
-    aliased_tokens[1] = is_64bit ? "xzr" : "wzr";
-    for (int i = 2; i <= token_count; i++) aliased_tokens[i] = tokens[i - 1];
-
+    char* aliased_tokens[token_count + 2];
     aliased_tokens[0] = (strcmp(tokens[0], "cmp") == 0) ? "subs" : "adds";
-    return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
+    aliased_tokens[1] = is_64bit ? "xzr" : "wzr";
+    aliased_tokens[2] = ",";
+    for (int i = 3; i < token_count + 2; i++) aliased_tokens[i] = tokens[i - 2];
+
+    return assemble_arithmetic(aliased_tokens, token_count + 2, is_64bit);
 }
 
 // neg(s) rd, <op2> == sub(s) rd, rzr, <op2>
 static uint32_t assemble_neg(char** tokens, int token_count, bool is_64bit) {
     // Populate new tokens to handle the alias
-    char* aliased_tokens[token_count + 1];
+    char* aliased_tokens[token_count + 2];
     aliased_tokens[1] = tokens[1];
-    aliased_tokens[2] = is_64bit ? "xzr" : "wzr";
-    for (int i = 3; i < token_count; i++) aliased_tokens[i] = tokens[i - 1];
+    aliased_tokens[2] = ",";
+    aliased_tokens[3] = is_64bit ? "xzr" : "wzr";
+    aliased_tokens[4] = ",";
+    for (int i = 5; i < token_count + 2; i++) aliased_tokens[i] = tokens[i - 2];
 
     aliased_tokens[0] = (strcmp(tokens[0], "neg") == 0) ? "sub" : "subs";
-    return assemble_arithmetic(aliased_tokens, token_count + 1, is_64bit);
+    return assemble_arithmetic(aliased_tokens, token_count + 2, is_64bit);
 }
 
 // and, ands, bic, bics, orr, orn, eor, eon
@@ -184,8 +187,8 @@ static uint32_t assemble_logical(char** tokens, int token_count, bool is_64bit) 
 
     uint8_t sf = is_64bit ? 1 : 0;
     uint8_t rd = get_register_number(tokens[1]);
-    uint8_t rn = get_register_number(tokens[2]);
-    uint8_t rm = get_register_number(tokens[3]);
+    uint8_t rn = get_register_number(tokens[3]);
+    uint8_t rm = get_register_number(tokens[5]);
     // Determine opc and N based on the mnemonic
     // The LSB of opc_N determines N, the rest determines opc
     uint8_t opc_N = 0;
@@ -218,9 +221,9 @@ static uint32_t assemble_logical(char** tokens, int token_count, bool is_64bit) 
     set_bits(&instruction_word, 0, 4, rd);
 
     // Handle shift if provided
-    if (token_count == 6) {
-        uint8_t shift_type = get_shift_type(tokens[4]);
-        uint8_t shift_amt = get_immediate_value(tokens[5]);
+    if (token_count == 10) {
+        uint8_t shift_type = get_shift_type(tokens[7]);
+        uint8_t shift_amt = get_immediate_value(tokens[9]);
         set_bits(&instruction_word, 22, 23, shift_type);
         set_bits(&instruction_word, 10, 15, shift_amt);
     }
@@ -231,12 +234,13 @@ static uint32_t assemble_logical(char** tokens, int token_count, bool is_64bit) 
 // tst rn, <op2> == ands rzr, rn, <op2>
 static uint32_t assemble_tst(char** tokens, int token_count, bool is_64bit) {
     // Populate new tokens to handle the alias
-    char* aliased_tokens[token_count + 1];
+    char* aliased_tokens[token_count + 2];
     aliased_tokens[0] = "ands";
     aliased_tokens[1] = is_64bit ? "xzr" : "wzr";
-    for (int i = 2; i <= token_count; i++) aliased_tokens[i] = tokens[i - 1];
+    aliased_tokens[2] = ",";
+    for (int i = 3; i < token_count + 2; i++) aliased_tokens[i] = tokens[i - 2];
 
-    return assemble_logical(aliased_tokens, token_count + 1, is_64bit);
+    return assemble_logical(aliased_tokens, token_count + 2, is_64bit);
 }
 
 // movn, movz, movk
@@ -245,7 +249,7 @@ static uint32_t assemble_movx(char** tokens, int token_count, bool is_64bit) {
 
     uint8_t sf = is_64bit ? 1 : 0;
     uint8_t rd = get_register_number(tokens[1]);
-    uint16_t imm16 = get_immediate_value(tokens[2]);
+    uint16_t imm16 = get_immediate_value(tokens[4]);
     uint8_t opc = 0;  // movn
     if (strcmp(tokens[0], "movz") == 0)
         opc = 2;  // opc = 10
@@ -261,8 +265,8 @@ static uint32_t assemble_movx(char** tokens, int token_count, bool is_64bit) {
     set_bits(&instruction_word, 0, 4, rd);
 
     // Handle shift if provided
-    if (token_count == 5) {
-        uint8_t shift_amount = get_immediate_value(tokens[4]);
+    if (token_count == 9) {
+        uint8_t shift_amount = get_immediate_value(tokens[8]);
         uint8_t hw = shift_amount >> 4;
         set_bits(&instruction_word, 21, 22, hw);
     }
@@ -273,25 +277,29 @@ static uint32_t assemble_movx(char** tokens, int token_count, bool is_64bit) {
 // mov rd, rm == orr rd, rzr, rm
 static uint32_t assemble_mov(char** tokens, int token_count, bool is_64bit) {
     // Populate new tokens to handle the alias
-    char* aliased_tokens[token_count + 1];
+    char* aliased_tokens[token_count + 2];
     aliased_tokens[0] = "orr";
     aliased_tokens[1] = tokens[1];  // rd
-    aliased_tokens[2] = is_64bit ? "xzr" : "wzr";
-    aliased_tokens[3] = tokens[2];  // rm
+    aliased_tokens[2] = ",";
+    aliased_tokens[3] = is_64bit ? "xzr" : "wzr";
+    aliased_tokens[4] = ",";
+    aliased_tokens[5] = tokens[3];  // rm
 
-    return assemble_logical(aliased_tokens, token_count + 1, is_64bit);
+    return assemble_logical(aliased_tokens, token_count + 2, is_64bit);
 }
 
 // mvn rd, <op2> == orn rd, rzr, <op2>
 static uint32_t assemble_mvn(char** tokens, int token_count, bool is_64bit) {
     // Populate new tokens to handle the alias
-    char* aliased_tokens[token_count + 1];
+    char* aliased_tokens[token_count + 2];
     aliased_tokens[0] = "orn";
     aliased_tokens[1] = tokens[1];  // rd
-    aliased_tokens[2] = is_64bit ? "xzr" : "wzr";
-    for (int i = 3; i <= token_count; i++) aliased_tokens[i] = tokens[i - 1];
+    aliased_tokens[2] = ",";
+    aliased_tokens[3] = is_64bit ? "xzr" : "wzr";
+    aliased_tokens[4] = ",";
+    for (int i = 3; i < token_count + 2; i++) aliased_tokens[i] = tokens[i - 2];
 
-    return assemble_logical(aliased_tokens, token_count + 1, is_64bit);
+    return assemble_logical(aliased_tokens, token_count + 2, is_64bit);
 }
 
 // madd, msub
@@ -300,9 +308,9 @@ static uint32_t assemble_m_arith(char** tokens, int token_count, bool is_64bit) 
 
     uint8_t sf = is_64bit ? 1 : 0;
     uint8_t rd = get_register_number(tokens[1]);
-    uint8_t rn = get_register_number(tokens[2]);
-    uint8_t rm = get_register_number(tokens[3]);
-    uint8_t ra = get_register_number(tokens[4]);
+    uint8_t rn = get_register_number(tokens[3]);
+    uint8_t rm = get_register_number(tokens[5]);
+    uint8_t ra = get_register_number(tokens[7]);
     uint8_t x = (strcmp(tokens[0], "madd") == 0) ? 0 : 1;  // x = 0 for madd, 1 for msub
 
     // Set the instruction word bits
@@ -321,12 +329,13 @@ static uint32_t assemble_m_arith(char** tokens, int token_count, bool is_64bit) 
 // mneg rd, rn, rm == msub rd, rn, rm, rzr
 static uint32_t assemble_mul(char** tokens, int token_count, bool is_64bit) {
     // Populate new tokens to handle the alias
-    char* aliased_tokens[token_count + 1];
+    char* aliased_tokens[token_count + 2];
     for (int i = 1; i < token_count; i++) aliased_tokens[i] = tokens[i];
-    aliased_tokens[token_count] = is_64bit ? "xzr" : "wzr";
+    aliased_tokens[token_count] = ",";
+    aliased_tokens[token_count + 1] = is_64bit ? "xzr" : "wzr";
 
     aliased_tokens[0] = (strcmp(tokens[0], "mul") == 0) ? "madd" : "msub";
-    return assemble_m_arith(aliased_tokens, token_count + 1, is_64bit);
+    return assemble_m_arith(aliased_tokens, token_count + 2, is_64bit);
 }
 
 // --- HELPER FUNCTIONS ---
@@ -354,7 +363,7 @@ static mnemonic_type get_mnemonic_type(char* mnemonic) {
 }
 
 static uint32_t get_immediate_value(char* token) {
-    return strtol(token + 1, NULL, 0);  // Skip the '#' prefix and convert to integer
+    return strtol(token, NULL, 0);  // Skip the '#' prefix and convert to integer
 }
 
 static uint8_t get_register_number(char* reg) {
