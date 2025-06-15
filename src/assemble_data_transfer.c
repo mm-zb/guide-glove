@@ -86,10 +86,8 @@ uint32_t assemble_loadstore(char** tokens, int token_count, SymbolTable *symbol_
 
     // Constructing binary instruction
     instruction |= rt; 
-    if (is_ldr) {
-        instruction |= SDT_L; // Add load bit
-    }
     if (is_sdt(mode)) {
+        instruction |= is_ldr ? SDT_L : 0; 
         instruction |= SDT_BASE;
         instruction |= xn;
     } else { // Load literal instruction
@@ -165,18 +163,8 @@ AddressingMode get_addressing_mode(char** tokens, int token_count, int lbrace, i
     } else if (rbrace + 1 < token_count && strcmp(tokens[rbrace + 1], "!") == 0) {
         mode = PRE_INDEXED;
     } else if (rbrace == token_count - 1) { // Unsigned immediate or register
-        // Check if hashtag in our function
-        bool contains_hashtag = false;
-
-        // We have the precondition that lbrace < hashtag < rbrace 
-        // as it was asserted before this function was called
-        for (int i = lbrace; i < rbrace; i++) {
-            if (strcmp(tokens[i], "#") == 0) {
-                contains_hashtag = true;
-            } 
-        }
-
-        contains_hashtag ? (mode = UNSIGNED_OFFSET) : (mode = REGISTER_OFFSET);
+        // If the brackets contain exactly two registers, it's a register offset
+        (rbrace - lbrace == 4) ? (mode = REGISTER_OFFSET) : (mode = UNSIGNED_OFFSET);
     } else if (rbrace + 1 < token_count && strcmp(tokens[rbrace + 1], ",") == 0 &&
                rbrace + 2 < token_count && strcmp(tokens[rbrace + 2], "#") == 0) {
         mode = POST_INDEXED;
@@ -234,7 +222,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable *symbol_
         sdt_reg_xn = (uint32_t)parse_register(tokens[lbrace + 1]);
         
         // Populating addressing mode-specific fields
-        uint32_t imm = atoi(tokens[hashtag + 1]);
+        uint32_t imm = strtol(tokens[hashtag + 1], NULL, 0); // Base 0 auto-detects hex or decimal
         switch (mode) {
             case ZERO_OFFSET:
                 break;
@@ -243,7 +231,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable *symbol_
                 break;
             case PRE_INDEXED:
             case POST_INDEXED:
-                sdt_simm9 = atoi(tokens[hashtag + 1]);
+                sdt_simm9 = strtol(tokens[hashtag + 1], NULL, 0);
                 break;
             case REGISTER_OFFSET:
                 sdt_reg_xm = (uint32_t)parse_register(tokens[rbrace - 1]);
