@@ -219,7 +219,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable *symbol_
         }
     }
 
-    assert(hashtag == -1 || (lbrace < hashtag && hashtag < rbrace));
+    // assert(hashtag == -1 || (lbrace < hashtag && hashtag < rbrace));
 
     mode = get_addressing_mode(tokens, token_count, lbrace, rbrace, hashtag);
 

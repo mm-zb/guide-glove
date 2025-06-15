@@ -2,21 +2,39 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 
 #include "symbol_table.h"
 #include "tokenizer.h"
+#include "branch_assembler.h"
+#include "assemble_data_transfer.h"
+#include "assemble_dp.h"
 
 // TODO: EVERYONE 
 // --- TEMPORARY FORWARD DECLARATIONS FOR TEAMMATES' FUNCTIONS ---
 // They will implement these in their own files later
 
-uint32_t assembleDataProcessing(char** tokens, int token_count);
-uint32_t assembleDataTransfer(char** tokens, int token_count, uint32_t current_address, SymbolTable table);
-uint32_t assembleBranch(char** tokens, int token_count, uint32_t current_address, SymbolTable table);
-uint32_t assembleDirective(char** tokens, int token_count); //TODO: Zayan write this
-
 void pass_one(const char* file_in, SymbolTable table);
 void pass_two(const char* file_in, const char* file_out, SymbolTable table);
+
+const char* dp_mnemonics_c[] = {
+    "add", "adds", "and", "ands", "bic", "bics", "cmn", "cmp",
+    "eon", "eor", "madd", "mov", "movk", "movn", "movz", "mul",
+    "mvn", "neg", "negs", "orr", "orn", "sub", "subs", "tst",
+};
+
+const size_t NUM_DP_MNEMONICS = sizeof(dp_mnemonics_c) / sizeof(dp_mnemonics_c[0]);
+
+int compare_strings(const void* a, const void* b) {
+    return strcmp(*(const char**)a, *(const char**)b);
+}
+
+bool is_data_processing_mnemonic_c(const char* mnemonic) {
+    // bsearch expects a pointer to the key type
+    const char** key = &mnemonic;
+    const char** found = bsearch(key, dp_mnemonics_c, NUM_DP_MNEMONICS, sizeof(const char*), compare_strings);
+    return found != NULL;
+}
 
 int main(int argc, char **argv) {
     if (argc != 3) {
@@ -138,16 +156,34 @@ void pass_two(const char* file_in, const char* file_out, SymbolTable table) {
         // TODO: --- Integration Point for Team ---
         if (strcmp(mnemonic, ".int") == 0) {
             // Handle the .int directive directly here.
-            binary_word = (uint32_t)strtol(instruction_tokens[1], NULL, 0); // Base 0 auto-detects hex
-        } else if (strcmp(mnemonic, "add") == 0 || strcmp(mnemonic, "sub") == 0 /* ... more DP checks */) {
-            // binary_word = assembleDataProcessing(instruction_tokens, instruction_token_count);
-            binary_word = 0xDEADBEEF; // Placeholder for Richard's work
-        } else if (strcmp(mnemonic, "ldr") == 0 || strcmp(mnemonic, "str") == 0) {
-            // binary_word = assembleDataTransfer(instruction_tokens, instruction_token_count, address, table);
-            binary_word = 0xCAFEBABE; // Placeholder for Zayan's work
-        } else if (mnemonic[0] == 'b') {
-            // binary_word = assembleBranch(instruction_tokens, instruction_token_count, address, table);
-            binary_word = 0xBAADF00D; // Placeholder for Prasanna's work
+            // binary_word = (uint32_t)strtol(instruction_tokens[1], NULL, 0); // Base 0 auto-detects hex
+            binary_word = assemble_directive(instruction_tokens, instruction_token_count, &table);
+        } else if (is_data_processing_mnemonic_c(mnemonic)) {
+            binary_word = assembleDataProcessing(instruction_tokens, instruction_token_count);
+            //binary_word = 0xDEADBEEF; // Placeholder for Richard's work
+        } else if (strcmp(mnemonic, "ldr") == 0 ) {
+            binary_word = assemble_ldr(instruction_tokens, instruction_token_count, &table, address);
+        } else if (strcmp(mnemonic, "str") == 0) {
+            binary_word = assemble_str(instruction_tokens, instruction_token_count, &table, address);
+        } else if (strcmp(mnemonic, "b") == 0) {
+            // Unconditional branch to literal
+            binary_word = assemble_b_literal(instruction_tokens, instruction_token_count, address, table);
+            if (binary_word == 0) { // Assuming 0 indicates an assembly error from your function
+                fprintf(stderr, "Error assembling 'b' instruction for line: %s", line_buffer); // line_buffer has the current line
+                // Potentially set a flag to indicate assembly failure for this line or the whole file
+            }
+        } else if (strcmp(mnemonic, "br") == 0) {
+            // Branch to register
+            binary_word = assemble_br_register(instruction_tokens, instruction_token_count);
+            if (binary_word == 0) {
+                fprintf(stderr, "Error assembling 'br' instruction for line: %s", line_buffer);
+            }
+        } else if (strncmp(mnemonic, "b.", 2) == 0) {
+            // Conditional branch (e.g., "b.eq", "b.ne")
+            binary_word = assemble_b_conditional(instruction_tokens, instruction_token_count, address, table);
+            if (binary_word == 0) {
+                fprintf(stderr, "Error assembling conditional branch '%s' for line: %s", mnemonic, line_buffer);
+            }
         } else {
             fprintf(stderr, "Warning: Unknown mnemonic '%s' at address 0x%x. Skipping line.\n", mnemonic, address);
             free_tokens(tokens, token_count);

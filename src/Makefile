@@ -9,7 +9,7 @@ CFLAGS  ?= -std=c17 -g\
 
 all: assemble emulate
 
-ASS_SRCS = assemble.c tokenizer.c symbol_table.c assemble_dp.c assemble_data_transfer.c
+ASS_SRCS = assemble.c tokenizer.c symbol_table.c assemble_dp.c assemble_data_transfer.c branch_assembler.c
 ASS_OBJS = $(ASS_SRCS:.c=.o)
 
 assemble: $(ASS_OBJS)
@@ -36,5 +36,8 @@ tokenizer.o: tokenizer.c tokenizer.h
 symbol_table.o: symbol_table.c symbol_table.h
 	$(CC) $(CFLAGS) -c symbol_table.c
 
-assemble.o: assemble.c tokenizer.h symbol_table.h assemble_data_transfer.h
+assemble.o: assemble.c tokenizer.h symbol_table.h branch_assembler.h assemble_data_transfer.h
 	$(CC) $(CFLAGS) -c assemble.c
+
+branch_assembler.o: branch_assembler.c branch_assembler.h symbol_table.h
+	$(CC) $(CFLAGS) -c branch_assembler.c
