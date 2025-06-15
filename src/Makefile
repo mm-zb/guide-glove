@@ -36,7 +36,7 @@ tokenizer.o: tokenizer.c tokenizer.h
 symbol_table.o: symbol_table.c symbol_table.h
 	$(CC) $(CFLAGS) -c symbol_table.c
 
-assemble.o: assemble.c tokenizer.h symbol_table.h branch_assembler.h assemble_data_transfer.h
+assemble.o: assemble.c tokenizer.h symbol_table.h assemble_dp.h branch_assembler.h assemble_data_transfer.h
 	$(CC) $(CFLAGS) -c assemble.c
 
 branch_assembler.o: branch_assembler.c branch_assembler.h symbol_table.h
