@@ -219,7 +219,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable *symbol_
         }
     }
 
-    assert(hashtag == -1 || (lbrace < hashtag && hashtag < rbrace));
+    // assert(hashtag == -1 || (lbrace < hashtag && hashtag < rbrace));
 
     mode = get_addressing_mode(tokens, token_count, lbrace, rbrace, hashtag);
 
@@ -246,7 +246,7 @@ ParsedAddress parse_address(char** tokens, int token_count, SymbolTable *symbol_
                 sdt_simm9 = atoi(tokens[hashtag + 1]);
                 break;
             case REGISTER_OFFSET:
-                sdt_reg_xm = (uint32_t)parse_register(tokens[lbrace + 3]);
+                sdt_reg_xm = (uint32_t)parse_register(tokens[rbrace - 1]);
                 break;
             default:
                 // Invalid addressing mode

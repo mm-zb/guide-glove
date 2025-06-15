@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 
 static uint8_t parse_xn_register(const char* token) {
     assert(token != NULL);
@@ -22,7 +23,8 @@ static uint8_t parse_xn_register(const char* token) {
             return (uint8_t)reg_num_long;
         }
     }
-
+    // If reach here we have an invalid format
+    exit(1); 
 }
 
 static uint8_t map_condition_to_code(const char* cond_mnemonic) {
@@ -60,8 +62,8 @@ uint32_t assemble_br_register(char** tokens, int token_count) {
     // Bits 4..0 are `00000`
 
     uint32_t instruction = 0;
-    instruction |= (0b11010110 << 24); // Bits 31-24 (First 8 bits of the pattern)
-    instruction |= (0b00011111 << 16); // Bits 23-16 (Next 8 bits: opc=0000, Res1(part1)=1111) Note: spec diagram has this split differently.
+    instruction |= (0xD6 << 24); // Bits 31-24 (First 8 bits of the pattern)
+    instruction |= (0x1F << 16); // Bits 23-16 (Next 8 bits: opc=0000, Res1(part1)=1111) Note: spec diagram has this split differently.
 
 
     // The standard encoding for BR Xn is:
@@ -72,12 +74,12 @@ uint32_t assemble_br_register(char** tokens, int token_count) {
     // Rn  (bit 5-9)   = Xn register
     // op4 (bit 0-4)   = 00000 (Reserved, should be 0s)
 
-    instruction = (0b1101011 << 25)  // op0
-                | (0b0000 << 21)     // op1 (opc)
-                | (0b11111 << 16)    // op2 (Res1)
-                | (0b000000 << 10)   // op3 (Res1)
+    instruction = (0x6B << 25)  // op0
+                | (0x0 << 21)     // op1 (opc)
+                | (0x1F << 16)    // op2 (Res1)
+                | (0x0 << 10)   // op3 (Res1)
                 | (rn_val << 5)      // Rn
-                | (0b00000 << 0);    // op4 (Res0)
+                | (0x0 << 0);    // op4 (Res0)
 
     return instruction;
 }
@@ -133,7 +135,7 @@ uint32_t assemble_b_conditional(char** tokens, int token_count, uint32_t current
     int32_t simm19_val = offset_bytes / 4;
 
     // Bits 31-24: 01010100
-    uint32_t opcode_b_cond_fixed_part = 0b01010100;
+    uint32_t opcode_b_cond_fixed_part = 0x54;
 
     uint32_t instruction = (opcode_b_cond_fixed_part << 24)
                          | ((simm19_val & 0x0007FFFF) << 5) // Mask to 19 bits and shift
@@ -195,7 +197,7 @@ uint32_t assemble_b_literal(char** tokens, int token_count, uint32_t current_add
     }
 
     // Opcode for 'b' (unconditional immediate) is 000101
-    uint32_t opcode_b = 0b000101;
+    uint32_t opcode_b = 0x5;
     uint32_t instruction = (opcode_b << 26) | (simm26_val & 0x03FFFFFF); // Mask to 26 bits
 
     return instruction;
