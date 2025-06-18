@@ -5,6 +5,7 @@
 #define INPUT_FILENAME "distances.txt"
 #define OUTPUT_FILENAME "distances.txt"
 
+#define MOTOR_PIN 26
 #define BUZZER_PIN 22
 #define TRIG_PIN 21
 #define ECHO_PIN 20

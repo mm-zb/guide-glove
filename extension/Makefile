@@ -6,7 +6,8 @@ TARGETS := buzzer_feedback \
            buzzer_non_linear \
            buzzer_verify \
            c_distance_sensor \
-           sensor_file_writer
+           sensor_file_writer \
+           buzzer_vibrator
 
 .PHONY: all clean
 all: $(TARGETS)
