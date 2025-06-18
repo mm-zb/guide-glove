@@ -55,7 +55,7 @@ int main(void) {
                 float pulse_us = (float)(endTick - startTick);
                 float dist_cm  = (pulse_us / 1e6f) * 17150.0f;
                 // Write the formatted string to the file instead of the console
-                fprintf(file_ptr, "%.3f", dist_cm);
+                fprintf(file_ptr, "%.2f", dist_cm);
             } else {
                 // Write an error value to the file
                 fprintf(file_ptr, "-1.0");
@@ -63,7 +63,7 @@ int main(void) {
             fclose(file_ptr);
         }
 
-        usleep(100000);  // 0.1s between measurements
+        usleep(50000);  // 0.05s between measurements
     }
 
     pigpio_stop(pi);
