@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> 
 #include <pigpiod_if2.h>
 #include <unistd.h>
 #include <signal.h> 
@@ -9,7 +9,6 @@
 // Global variable for pigpio connection, for cleanup
 int pi;
 
-// Cleanup function for Ctrl+C
 void cleanup(int signum) {
     printf("\nSignal received. Cleaning up and stopping buzzer...\n");
     if (pi >= 0) {
@@ -28,7 +27,7 @@ int main(void) {
     }
 
     set_PWM_dutycycle(pi, BUZZER_PIN, 0);
-    printf("Final Feedback System Running on GPIO %d.\n", BUZZER_PIN);
+    printf("Dynamic Pitch with Custom Rhythm Feedback Running on GPIO %d.\n", BUZZER_PIN);
     printf("Reading from %s. Press Ctrl+C to stop.\n", INPUT_FILENAME);
 
     while (1) {
@@ -46,42 +45,50 @@ int main(void) {
         }
         fclose(file_ptr);
 
-        if (distance > 0 && distance < 100) {
-            int beep_frequency_hz = 2500; // A higher, more urgent pitch
+        // --- DYNAMIC PITCH AND RHYTHM ---
+        if (distance > 0 && distance < 35) {
             int beep_duration_ms = 50;    // A shorter, faster "tick"
             int silent_delay_ms;
+            int beep_frequency_hz;
 
-            if (distance < 6) {
-                // DANGER ZONE: Constant tone, no beeping.
-                printf("!!! DANGER - Object at %.1f cm !!! Constant Tone\n", distance);
+            // Map distance [35cm -> 5cm] to frequency [800Hz -> 3000Hz]
+            // A lower pitch for far away, a higher pitch for very close.
+            beep_frequency_hz = (int)(3500 - (distance * 70));
+            // Clamp the frequency to a sensible audible range
+            if (beep_frequency_hz < 800) beep_frequency_hz = 800;
+            if (beep_frequency_hz > 3000) beep_frequency_hz = 3000;
+
+            // --- DANGER ZONE : Constant High-Pitched Tone ---
+            if (distance < 5) {
+                printf("!!! DANGER - Object at %.1f cm !!! Constant Tone at %d Hz\n", distance, beep_frequency_hz);
                 set_PWM_frequency(pi, BUZZER_PIN, beep_frequency_hz);
                 set_PWM_dutycycle(pi, BUZZER_PIN, 128);
                 usleep(50000); // Small delay to prevent this loop from maxing out the CPU
-                continue; // Skip the rest of the loop and read the file again
+                continue; // Skip the beeping logic and re-check distance
             }
             
-            if (distance < 15) {
-                // URGENT ZONE (< 15cm): Very aggressive curve.
+            if (distance < 10) {
+                // URGENT ZONE
                 silent_delay_ms = (int)(distance * 4);
-            } else if (distance < 40) {
-                // WARNING ZONE (15-40cm): Steeper curve.
+            } else if (distance < 20) {
+                // WARNING ZONE
                 silent_delay_ms = (int)(distance * 6);
             } else {
-                // AWARENESS ZONE (40-100cm): Less aggressive initial curve.
+                // AWARENESS ZONE
                 silent_delay_ms = (int)(distance * 9);
             }
 
             if (silent_delay_ms < 10) silent_delay_ms = 10;
 
-            printf("Object at %.1f cm. Beep rhythm: %dms ON, %dms OFF.\n",
-                   distance, beep_duration_ms, silent_delay_ms);
+            printf("Object at %.1f cm. Freq: %dHz, Rhythm: %dms ON, %dms OFF.\n",
+                   distance, beep_frequency_hz, beep_duration_ms, silent_delay_ms);
 
+            // Use the NEW frequency but the OLD rhythm logic
             set_PWM_frequency(pi, BUZZER_PIN, beep_frequency_hz);
             set_PWM_dutycycle(pi, BUZZER_PIN, 128); // Beep ON
             usleep(beep_duration_ms * 1000);
 
             set_PWM_dutycycle(pi, BUZZER_PIN, 0); // Beep OFF
-            
             usleep(silent_delay_ms * 1000);
 
         } else {
