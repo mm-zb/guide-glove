@@ -1,21 +1,187 @@
 \documentclass[11pt]{article}
 
-\usepackage{fullpage}
+% PACKAGES FOR STYLING AND FUNCTIONALITY
+\usepackage{fullpage} % Use more of the page
+\usepackage{xcolor}   % For colored text, used in the \todo command
+\usepackage{amsmath}  % For advanced math environments and symbols
+\usepackage{graphicx} % For including images
+% \usepackage{listings} % Recommended for formatting code snippets
+
+% CUSTOM COMMANDS
+% A \todo command to leave notes for team members
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO: #1}}}
+
+% =============================================================================
+% DOCUMENT STARTS HERE
+% =============================================================================
 
 \begin{document}
 
-\title{Our Extension...}
-\author{TODO}
+% -----------------------------------------------------------------------------
+% TITLE PAGE
+% -----------------------------------------------------------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\huge ARMv8 AArch64 – Assembler and Emulator\par}
+    
+    \vspace{1.5cm}
+    
+    {\LARGE Final Report\par}
+    
+    \vspace{0.5cm}
+    
+    % NOTE: The final report must be a maximum of 6 pages (6 A4 sides).
+    % Be concise in your descriptions.
+    
+    \vfill % Pushes the content below to the bottom
+    
+    {\Large Team 54\par}
+    
+    \vspace{1cm}
+    
+    {\large Date: 20 June 2025\par}
+    
+    \vspace{1cm}
+    
+    \textbf{Group Members:}\\
+    \begin{large}
+        \begin{tabular}{l}
+            Member Name 1 \\
+            Member Name 2 \\
+            Member Name 3 \\
+            Member Name 4 \\
+        \end{tabular}
+    \end{large}
 
-\maketitle
+    \vspace*{2cm}
+    
+\end{titlepage}
 
-\section{Introduction}
+% -----------------------------------------------------------------------------
+% TABLE OF CONTENTS
+% -----------------------------------------------------------------------------
+\tableofcontents
+\newpage
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+% -----------------------------------------------------------------------------
+% SECTION 1: ASSEMBLER IMPLEMENTATION
+% -----------------------------------------------------------------------------
+\section{Assembler (Part II) - Design and Implementation}
+
+\subsection{High-Level Design: A Two-Pass Approach}
+
+To handle forward references to labels, we implemented a classic two-pass assembler. This design decouples symbol resolution from code generation, simplifying the logic for branch and literal load instructions.
+
+\subsubsection{Pass 1: Symbol Resolution}
+In the first pass, the assembler reads the input \texttt{.s} file line-by-line to build a symbol table. We maintained a program counter, starting at address zero, which was incremented by four for each instruction or \texttt{.int} directive encountered. When a token ending in a colon (\texttt{:}) was found, we stripped the colon and added the resulting label along with the current address to our symbol table. 
+\todo{State the data structure used for your symbol table (e.g., "a linked list for simplicity," or "a hash map for efficient lookups") and justify the choice.}
+
+\subsubsection{Pass 2: Code Generation}
+The second pass rereads the \texttt{.s} file, this time with a complete symbol table. For each line, we invoke the tokenizer to break it into its component parts. A central "dispatcher" function then inspects the mnemonic (the first token) to call the appropriate assembly function (e.g., \texttt{assemble\_dp}, \texttt{assemble\_ldr}, \texttt{assemble\_b}). The resulting 32-bit instruction is then written to the output binary file in little-endian format.
+\todo{Briefly mention how the output file was handled (e.g., using fwrite).}
+
+
+\subsection{Key Implementation Modules}
+
+\subsubsection{Tokenizer}
+A critical early challenge was the design of our tokenizer. Our initial implementation treated chunks like \texttt{[Xn, \#imm]} as single tokens. This proved inflexible and made parsing the varied data transfer addressing modes difficult. We refactored the tokenizer to treat special characters (\texttt{[}, \texttt{]}, \texttt{,}, \texttt{\#}, \texttt{!}) as individual tokens. This change created a more predictable and granular token stream, which significantly simplified the logic in our data transfer and data processing instruction assemblers.
+\todo{Add a sentence about how you managed the token stream, e.g., storing it in a dynamic array for each line.}
+
+\subsubsection{Data Processing (DP) Instructions}
+\todo{Explain how you handled the large number of DP mnemonics. Mention using a lookup table, a structured if-else chain, or another mapping strategy.}
+A key feature of our implementation was correctly handling architectural aliases; for example, \texttt{mov rd, rm} is assembled as \texttt{orr rd, rzr, rm}. This demonstrates an understanding of the instruction set's efficiency.
+
+Initially, we overlooked a few data processing mnemonics during implementation, causing assembly failures in the test suite. This led us to adopt a more systematic approach: we created a checklist against the spec's instruction table (Table 1) and wrote a dedicated test case for each mnemonic and its aliases to ensure full coverage.
+
+\subsubsection{Data Transfer (LDR/STR) Instructions}
+The data transfer instructions were the most complex to implement due to their varied and flexible addressing modes. Our improved tokenizer was essential here. By examining the pattern of tokens---such as the presence of an exclamation mark for pre/post-indexing or the number of tokens between the square brackets---we could reliably distinguish between the different addressing formats and call the correct assembly logic.
+\todo{Elaborate on one specific addressing mode (e.g., pre-indexed) and how the token stream was parsed to assemble it correctly.}
+
+\subsubsection{Branch Instructions}
+The core logic for assembling branch instructions is the calculation of the branch offset from a label. The offset is calculated using the formula: \texttt{offset = (target\_address - current\_instruction\_address) / 4}. We ensured our implementation correctly handled this as a signed, 4-byte-aligned, word-based offset. The target address was retrieved from the symbol table built in the first pass. 
+\todo{Confirm that your code correctly handles the sign extension for the simm19 (B.cond) and simm26 (B) fields.}
+
+
+% -----------------------------------------------------------------------------
+% SECTION 2: RASPBERRY PI IMPLEMENTATION
+% -----------------------------------------------------------------------------
+\section{Raspberry Pi (Part III) - Hardware Interaction}
+
+\subsection{Assembly Program Design (led\_blink.s)}
+Our assembly program, \texttt{led\_blink.s}, was designed to provide a simple, visible confirmation of successful hardware execution. Its logic proceeds as follows:
+\begin{itemize}
+    \item Load the base address of the GPIO peripheral registers into a register.
+    \item Configure the target GPIO pin (e.g., GPIO 21) as an output by writing the bit pattern \texttt{001} to the appropriate bits in the GPFSEL2 register.
+    \item Enter an infinite loop labelled \texttt{loop:}.
+    \item Turn the LED on by writing to the GPSET0 register.
+    \item Implement a delay using a nested loop that decrements a register a large number of times.
+    \item Turn the LED off by writing to the GPCLR0 register.
+    \item Implement another delay.
+    \item Use an unconditional branch (\texttt{b loop}) to repeat the cycle indefinitely.
+\end{itemize}
+
+\subsection{Challenges in Bridging Emulation and Hardware}
+A key insight from Part III was the gap between software emulation and physical hardware interaction. Our emulator successfully passed all provided test cases for standard memory and register operations. However, when the \texttt{kernel8.img} produced by our assembler was deployed on the Raspberry Pi, the LED initially failed to blink. Debugging revealed that while our assembly logic was correct, our emulator lacked a model for memory-mapped I/O (MMIO).
+
+To resolve this, we extended our emulator's memory access functions to detect writes to the GPIO address range (\texttt{0x3F200000 - 0x3F2000C0}). Instead of writing to our internal memory array, these operations would print a log message, such as \texttt{"GPIO: Write 0x... to GPSET0"}. This allowed us to verify the correctness of our \texttt{led\_blink.s} program within our own toolchain before deploying, dramatically improving our debugging workflow for hardware-specific code.
+
+
+% -----------------------------------------------------------------------------
+% SECTION 3: THE EXTENSION
+% -----------------------------------------------------------------------------
+\section{The Extension}
+
+\subsection{Description and Goal}
+\todo{State the high-level purpose of your extension. What new capability did you add to the assembler or emulator? (e.g., support for floating-point instructions, a new pseudo-instruction, an interactive debugger feature, etc.)}
+
+\subsection{Design and Implementation}
+\todo{Describe how you designed and implemented the extension. What new data structures, parsing logic, or execution logic were required? How did it integrate with your existing assembler/emulator codebase?}
+
+\subsection{Example of Use}
+\todo{Provide a short, concrete example of your extension in action. This could be a snippet of assembly code that uses your new feature, a screenshot of your new emulator command, or a description of an input and its corresponding output. Explain what the example demonstrates.}
+
+\subsection{Challenges and Learning}
+\todo{What was the most challenging part of implementing the extension? What key problems did you have to overcome? What did you learn from the process?}
+
+
+% -----------------------------------------------------------------------------
+% SECTION 4: TESTING STRATEGY
+% -----------------------------------------------------------------------------
+\section{Testing Strategy}
+
+\subsection{Assembler Testing}
+\todo{Describe how you tested the assembler. Did you use the provided test suite? Did you write your own unit tests or assembly files? Mention specific cases you focused on (e.g., forward/backward branches, all addressing modes, instruction aliases, edge cases).}
+
+\subsection{Raspberry Pi and Extension Testing}
+\todo{Explain how you verified the correctness of your LED blinking program and your extension. For the Pi, describe the process of deploying and observing the result. For the extension, describe the specific tests you wrote or ran to ensure it worked as intended.}
+
+\subsection{Effectiveness of Testing}
+\todo{Discuss how effective you believe your testing strategy was. Did it catch most bugs early? Were there any classes of bugs that your tests missed? What would you do to improve your testing process in the future?}
+
+
+% -----------------------------------------------------------------------------
+% SECTION 5: GROUP REFLECTION
+% -----------------------------------------------------------------------------
+\section{Group Reflection}
+\todo{Write a reflection on your experience working as a group. Discuss your methods for communication (e.g., Discord, regular meetings) and for splitting up work (e.g., by feature, pair programming). Critically evaluate how effective these methods were. What would you keep the same for a future group project, and what would you do differently?}
+
+
+% -----------------------------------------------------------------------------
+% SECTION 6: INDIVIDUAL REFLECTIONS
+% -----------------------------------------------------------------------------
+\section{Individual Reflections}
+\subsection{Reflection from <Member Name 1>}
+\todo{Write at least one paragraph reflecting on your personal contribution and experience. Use feedback from your peer assessment. What were your strengths and weaknesses? How did this compare to your expectations? What would you do differently or continue to do when working in future groups?}
+
+\subsection{Reflection from <Member Name 2>}
+\todo{Write at least one paragraph reflecting on your personal contribution and experience. Use feedback from your peer assessment. What were your strengths and weaknesses? How did this compare to your expectations? What would you do differently or continue to do when working in future groups?}
+
+\subsection{Reflection from <Member Name 3>}
+\todo{Write at least one paragraph reflecting on your personal contribution and experience. Use feedback from your peer assessment. What were your strengths and weaknesses? How did this compare to your expectations? What would you do differently or continue to do when working in future groups?}
+
+\subsection{Reflection from <Member Name 4>}
+\todo{Write at least one paragraph reflecting on your personal contribution and experience. Use feedback from your peer assessment. What were your strengths and weaknesses? How did this compare to your expectations? What would you do differently or continue to do when working in future groups?}
 
 \end{document}
