@@ -72,16 +72,26 @@
 
 \subsection{High-Level Design: A Two-Pass Approach}
 
-To handle forward references to labels, we implemented a classic two-pass assembler. This design decouples symbol resolution from code generation, simplifying the logic for branch and literal load instructions.
+To handle forward references to labels, we opted for the classic two-pass assembly process, 
+simplifying the logic for branch and literal load instructions.
 
 \subsubsection{Pass 1: Symbol Resolution}
-In the first pass, the assembler reads the input \texttt{.s} file line-by-line to build a symbol table. We maintained a program counter, starting at address zero, which was incremented by four for each instruction or \texttt{.int} directive encountered. When a token ending in a colon (\texttt{:}) was found, we stripped the colon and added the resulting label along with the current address to our symbol table. 
-\todo{State the data structure used for your symbol table (e.g., "a linked list for simplicity," or "a hash map for efficient lookups") and justify the choice.}
+In the first pass, the assembler reads the input \texttt{.s} file line-by-line to build a symbol table. 
+We maintained a program counter, starting at address zero, which was incremented by four for each instruction or \texttt{.int} 
+directive encountered. When a token ending in a colon (\texttt{:}) was found, 
+we stripped the colon and added the resulting label along with the address to our symbol table. 
+
+Our data structure of choice for the symbol table was a simple linked list, where each node contained the label,
+its corresponding address, and a pointer to the next node. We opted for this data structure due to its simplicity, 
+memory and insertion efficiency, and ease of implementation.  
+
 
 \subsubsection{Pass 2: Code Generation}
-The second pass rereads the \texttt{.s} file, this time with a complete symbol table. For each line, we invoke the tokenizer to break it into its component parts. A central "dispatcher" function then inspects the mnemonic (the first token) to call the appropriate assembly function (e.g., \texttt{assemble\_dp}, \texttt{assemble\_ldr}, \texttt{assemble\_b}). The resulting 32-bit instruction is then written to the output binary file in little-endian format.
-\todo{Briefly mention how the output file was handled (e.g., using fwrite).}
-
+The second pass rereads the \texttt{.s} file, this time with a complete symbol table. 
+For each line, we invoke the tokenizer to break it into its components. 
+A central if-else structure then inspects the mnemonic (the first token) to call the appropriate assembly function 
+(e.g., \texttt{assemble\_dp}, \texttt{assemble\_ldr}, \texttt{assemble\_b}). 
+The resulting 32-bit instruction word is then written to the output binary file using \texttt{fwrite} in little-endian format.
 
 \subsection{Key Implementation Modules}
 
