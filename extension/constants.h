@@ -9,6 +9,6 @@
 #define TRIG_PIN 21
 #define ECHO_PIN 20
 
-#define MAX_DISTANCE_CM 100.0f
-#define MIN_DISTANCE_CM 2.0f 
+#define MAX_DISTANCE_CM 35
+#define MIN_DISTANCE_CM 5 
 #endif

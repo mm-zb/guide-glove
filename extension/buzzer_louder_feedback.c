@@ -35,7 +35,7 @@ int main(void) {
         float distance = -1.0;
 
         if (file_ptr == NULL) {
-            usleep(50000); // Check file faster: every 50ms
+            usleep(SLEEP_TIME);
             continue;
         }
 
@@ -45,9 +45,9 @@ int main(void) {
         }
         fclose(file_ptr);
 
-        // --- DYNAMIC PITCH AND RHYTHM ---
-        if (distance > 0 && distance < 35) {
-            int beep_duration_ms = 50;    // A shorter, faster "tick"
+        // DYNAMIC PITCH AND RHYTHM
+        if (distance > MIN_DISTANCE_CM && distance < MAX_DISTANCE_CM) {
+            int beep_duration_ms = 50;    // A short and fast "tick"
             int silent_delay_ms;
             int beep_frequency_hz;
 
@@ -58,7 +58,7 @@ int main(void) {
             if (beep_frequency_hz < 800) beep_frequency_hz = 800;
             if (beep_frequency_hz > 3000) beep_frequency_hz = 3000;
 
-            // --- DANGER ZONE : Constant High-Pitched Tone ---
+            // DANGER ZONE : Constant High-Pitched Tone
             if (distance < 5) {
                 printf("!!! DANGER - Object at %.1f cm !!! Constant Tone at %d Hz\n", distance, beep_frequency_hz);
                 set_PWM_frequency(pi, BUZZER_PIN, beep_frequency_hz);
@@ -94,7 +94,7 @@ int main(void) {
         } else {
             // If no object is close, turn buzzer off and check again quickly.
             set_PWM_dutycycle(pi, BUZZER_PIN, 0);
-            usleep(50000); // Check file every 50ms
+            usleep(SLEEP_TIME);
         }
     }
     
