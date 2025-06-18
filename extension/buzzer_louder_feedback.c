@@ -5,18 +5,10 @@
 #include <signal.h> 
 
 #include "constants.h"
+#include "buzzer.h"
 
 // Global variable for pigpio connection, for cleanup
 int pi;
-
-void cleanup(int signum) {
-    printf("\nSignal received. Cleaning up and stopping buzzer...\n");
-    if (pi >= 0) {
-        set_PWM_dutycycle(pi, BUZZER_PIN, 0); // Ensure buzzer is off
-        pigpio_stop(pi);
-    }
-    exit(0);
-}
 
 int main(void) {
     signal(SIGINT, cleanup);
@@ -52,7 +44,7 @@ int main(void) {
             int beep_frequency_hz;
 
             // Map distance [35cm -> 5cm] to frequency [800Hz -> 3000Hz]
-            // A lower pitch for far away, a higher pitch for very close.
+            // A lower pitch for far away, a higher pitch for very close
             beep_frequency_hz = (int)(3500 - (distance * 70));
             // Clamp the frequency to a sensible audible range
             if (beep_frequency_hz < 800) beep_frequency_hz = 800;

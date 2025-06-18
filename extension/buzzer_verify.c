@@ -4,18 +4,11 @@
 #include <signal.h>
 
 #include "constants.h"
+#include "buzzer.h"
+
 // Global variable for the pigpio connection ID
 int pi;
 
-void cleanup(int signum) {
-    printf("\nSignal received. Cleaning up and stopping buzzer...\n");
-    // Turn off the software PWM before exiting
-    if (pi >= 0) {
-        set_PWM_dutycycle(pi, BUZZER_PIN, 0);
-        pigpio_stop(pi);
-    }
-    exit(0);
-}
 
 int main(void) {
     // Set up the cleanup function to handle Ctrl+C
