@@ -132,25 +132,30 @@ The core logic for assembling branch instructions is the calculation of the bran
 % -----------------------------------------------------------------------------
 % SECTION 2: RASPBERRY PI IMPLEMENTATION
 % -----------------------------------------------------------------------------
-\section{Raspberry Pi (Part III) - Hardware Interaction}
+\section{Raspberry Pi (Part III)}
 
 \subsection{Assembly Program Design (led\_blink.s)}
-Our assembly program, \texttt{led\_blink.s}, was designed to provide a simple, visible confirmation of successful hardware execution. Its logic proceeds as follows:
+Our assembly program, \texttt{led\_blink.s} used to blink an LED on the Raspberry Pi works as follows:
 \begin{itemize}
     \item Load the base address of the GPIO peripheral registers into a register.
     \item Configure the target GPIO pin (e.g., GPIO 21) as an output by writing the bit pattern \texttt{001} to the appropriate bits in the GPFSEL2 register.
-    \item Enter an infinite loop labelled \texttt{loop:}.
+    \item Enter an infinite loop labelled \texttt{main\_loop:}.
     \item Turn the LED on by writing to the GPSET0 register.
     \item Implement a delay using a nested loop that decrements a register a large number of times.
     \item Turn the LED off by writing to the GPCLR0 register.
     \item Implement another delay.
-    \item Use an unconditional branch (\texttt{b loop}) to repeat the cycle indefinitely.
+    \item Use an unconditional branch (\texttt{b main\_loop}) to repeat the cycle indefinitely.
 \end{itemize}
 
-\subsection{Challenges in Bridging Emulation and Hardware}
-A key insight from Part III was the gap between software emulation and physical hardware interaction. Our emulator successfully passed all provided test cases for standard memory and register operations. However, when the \texttt{kernel8.img} produced by our assembler was deployed on the Raspberry Pi, the LED initially failed to blink. Debugging revealed that while our assembly logic was correct, our emulator lacked a model for memory-mapped I/O (MMIO).
-
-To resolve this, we extended our emulator's memory access functions to detect writes to the GPIO address range (\texttt{0x3F200000 - 0x3F2000C0}). Instead of writing to our internal memory array, these operations would print a log message, such as \texttt{"GPIO: Write 0x... to GPSET0"}. This allowed us to verify the correctness of our \texttt{led\_blink.s} program within our own toolchain before deploying, dramatically improving our debugging workflow for hardware-specific code.
+\subsection{Challenges}
+Our emulator and assembler both passed all tests, but we faced challenges when deploying the assembly program to the Raspberry Pi.
+The main issue was that connecting the SD card containing the assembled 
+\texttt{kernel8.img} file did not flash the LED as expected.
+At first, we thought the issue was with the hardware, but after connecting the LED to the steady 5V pin, 
+we confirmed that the LED and the GPIO pin were functioning correctly.
+In the end, we discovered that we were connecting the SD card to the Raspberry Pi incorrectly;
+we were plugging in the USB card reader into a USB port instead of the SD card itself into the SD card slot.
+After correcting this, the LED started blinking as expected.
 
 
 % -----------------------------------------------------------------------------
