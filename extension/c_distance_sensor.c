@@ -51,7 +51,7 @@ int main(void) {
             printf("Measurement failed or out of range.\n");
         }
 
-        usleep(500000);
+        usleep(100000);
     }
 
     pigpio_stop(pi);
