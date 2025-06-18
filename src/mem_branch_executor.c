@@ -2,6 +2,9 @@
 // constants.h included implicitly through mem_branch_executor.h
 
 #define GPIO_BASE 0x3f200000
+#define GPFSEL2   (GPIO_BASE + 0x08)
+#define GPSET0    (GPIO_BASE + 0x1C)
+#define GPCLR0    (GPIO_BASE + 0x28)
 #define GPIO_END 0x3f200030
 
 // PC = PC + 4 * simm26
@@ -92,15 +95,40 @@ void execute_str(ARMState* state, addressing_mode addr_mode, DecodedInstruction*
     register_rt = instruction->sdt_ll_rt;
     target_register = state->registers[register_rt];
 
-    // TODO: Add GPIO updating
+    if (address >= GPIO_BASE && address < GPIO_END) {
+    // The Raspberry Pi spec requires GPIO access to be 32-bit wide.
+        if (sf != 0) { // sf=0 for 32-bit (W registers)
+            fprintf(stderr, "Warning: 64-bit STR to GPIO address 0x%08lx ignored.\n", address);
+            return;
+        }
 
-    // if ((address >= GPIO_BASE) && (address <= GPIO_END)) {
-    //     // Don't write to memory
-    //     return;
-    // }
+        uint32_t value_to_store = (uint32_t)target_register;
 
+        // Check which GPIO register is being accessed
+        switch (address) {
+            case GPFSEL2:
+                printf("One GPIO pin from 20 to 29 has been configured\n");
+                break;
+            case GPSET0:
+                // For turning the LED ON
+                // Check if the bit for pin 21 is set
+                if (value_to_store & (1 << 21)) {
+                    printf("PIN ON\n");
+                }
+                break;
+            case GPCLR0:
+                // For turning the LED OFF
+                if (value_to_store & (1 << 21)) {
+                    printf("PIN OFF\n");
+                }
+                break;
+        }
+        // After logging the GPIO action we need to return
+        // This prevents the emulator from writing to its main memory model
+        return;
+    }
     // Conditional write depending on sf
-    /* else */ if (sf == 0) { // Store a 32-bit word
+    else if (sf == 0) { // Store a 32-bit word
         bytes_stored = 4;
     } else { // Store a 64-bit doubleword
         bytes_stored = 8;
