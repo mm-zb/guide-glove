@@ -45,7 +45,8 @@ int main(void) {
             endTick = 0;
         }
         
-        // Open the file in "write" mode ('w'). This overwrites the file every time.
+        // Open the file in "write" mode ('w'). This overwrites the file every time 
+       //  (1 value at a time to prevent memory overflow)
         FILE *file_ptr = fopen(OUTPUT_FILENAME, "w");
 
         if (file_ptr == NULL) {
