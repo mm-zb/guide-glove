@@ -1,8 +1,10 @@
 #include <stdio.h>
-#include <stdlib.h>      // For atof()
+#include <stdlib.h>
 #include <pigpiod_if2.h>
 #include <unistd.h>
-#include <signal.h>      // For handling Ctrl+C
+#include <signal.h>
+
+#include "constants.h"
 
 // Global variable for pigpio connection, for cleanup
 int pi;
@@ -49,7 +51,6 @@ int main(void) {
             int beep_duration_ms = 50;    // A shorter, faster "tick"
             int silent_delay_ms;
 
-            // -Constant buzz
             if (distance < 6) {
                 // DANGER ZONE: Constant tone, no beeping.
                 printf("!!! DANGER - Object at %.1f cm !!! Constant Tone\n", distance);
@@ -75,7 +76,6 @@ int main(void) {
             printf("Object at %.1f cm. Beep rhythm: %dms ON, %dms OFF.\n",
                    distance, beep_duration_ms, silent_delay_ms);
 
-            // --- Execute the beep and the delay ---
             set_PWM_frequency(pi, BUZZER_PIN, beep_frequency_hz);
             set_PWM_dutycycle(pi, BUZZER_PIN, 128); // Beep ON
             usleep(beep_duration_ms * 1000);
