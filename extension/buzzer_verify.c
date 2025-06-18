@@ -3,8 +3,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#define BUZZER_PIN 22
-
+#include "constants.h"
 // Global variable for the pigpio connection ID
 int pi;
 

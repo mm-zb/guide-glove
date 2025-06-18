@@ -4,8 +4,6 @@
 
 #include "constants.h"
 
-#define OUTPUT_FILENAME "distances.txt"
-
 int main(void) {
     // connect to local pigpiod daemon
     int pi = pigpio_start(NULL, NULL);

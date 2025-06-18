@@ -5,8 +5,6 @@
 
 #include "constants.h"
 
-#define INPUT_FILENAME "distances.txt"
-
 int main(void) {
     // Connect to local pigpiod daemon
     int pi = pigpio_start(NULL, NULL);
