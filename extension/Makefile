@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g -O2
+CFLAGS = -Wall -Wextra -g -O2 -I/usr/local/include
 
-LDFLAGS = -lpigpiod_if2 -lpthread -lrt -lm
+LDFLAGS = -L/usr/local/lib -lpigpiod_if2 -lpthread -lrt -lm
 
 TARGETS = \
     buzzer_feedback \
