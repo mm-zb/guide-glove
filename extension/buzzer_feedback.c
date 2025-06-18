@@ -28,7 +28,7 @@ int main(void) {
 
         if (file_ptr == NULL) {
             // If the file doesn't exist yet, just wait and try again
-            usleep(200000); // Wait 0.2s
+            usleep(SLEEP_TIME);
             continue;
         }
 
@@ -49,7 +49,7 @@ int main(void) {
 
             // Beep for 50ms
             gpio_write(pi, BUZZER_PIN, 1);
-            usleep(50000);
+            usleep(SLEEP_TIME);
             gpio_write(pi, BUZZER_PIN, 0);
             
             // Wait for the calculated delay
@@ -58,7 +58,7 @@ int main(void) {
         } else {
             // If no object is close, just be quiet and wait.
             gpio_write(pi, BUZZER_PIN, 0);
-            usleep(200000); // Check the file every 0.2s
+            usleep(SLEEP_TIME); // Check the file every 0.2s
         }
     }
 
