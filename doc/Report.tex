@@ -86,8 +86,15 @@ The second pass rereads the \texttt{.s} file, this time with a complete symbol t
 \subsection{Key Implementation Modules}
 
 \subsubsection{Tokenizer}
-A critical early challenge was the design of our tokenizer. Our initial implementation treated chunks like \texttt{[Xn, \#imm]} as single tokens. This proved inflexible and made parsing the varied data transfer addressing modes difficult. We refactored the tokenizer to treat special characters (\texttt{[}, \texttt{]}, \texttt{,}, \texttt{\#}, \texttt{!}) as individual tokens. This change created a more predictable and granular token stream, which significantly simplified the logic in our data transfer and data processing instruction assemblers.
-\todo{Add a sentence about how you managed the token stream, e.g., storing it in a dynamic array for each line.}
+Our initial implementation treated chunks like \texttt{[Xn, \#imm]} as single tokens. 
+This proved impractical as it made parsing the varied data transfer addressing modes too complex. 
+We refactored the tokenizer to treat special characters (\texttt{[}, \texttt{]}, \texttt{,}, \texttt{\#}, \texttt{!}) as individual tokens. 
+This change created a more predictable and granular token stream,
+which significantly simplified the logic in our data transfer and data processing instruction assemblers.
+
+For the implementation, we used a simple resizing array for memory efficiency.
+We first skip any whitespace, then save the start of the token, and finally continue until we hit a whitespace or special character.
+Then we extract the token based on the start and current pointer and add it to the array.
 
 \subsubsection{Data Processing (DP) Instructions}
 To handle the large number of DP mnemonics, we implemented a lookup table that maps each mnemonic to one of ten DP mnemonic "types" 
