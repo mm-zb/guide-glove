@@ -2,8 +2,8 @@
 #include <pigpiod_if2.h>
 #include <unistd.h>    // for usleep()
 
-#define TRIG_PIN 21
-#define ECHO_PIN 20
+#include "constants.h"
+
 #define OUTPUT_FILENAME "distances.txt"
 
 int main(void) {
@@ -64,7 +64,7 @@ int main(void) {
             fclose(file_ptr);
         }
 
-        usleep(50000);  // 0.05s between measurements
+        usleep(SLEEP_TIME);  
     }
 
     pigpio_stop(pi);

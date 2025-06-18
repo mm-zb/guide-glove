@@ -2,8 +2,8 @@
 #include <pigpiod_if2.h>
 #include <unistd.h>    // for usleep()
 
-#define TRIG_PIN 21
-#define ECHO_PIN 20
+#include "constants.h"
+
 
 int main(void) {
     // connect to local pigpiod daemon
@@ -51,7 +51,7 @@ int main(void) {
             printf("Measurement failed or out of range.\n");
         }
 
-        usleep(50000);
+        usleep(SLEEP_TIME);
     }
 
     pigpio_stop(pi);
