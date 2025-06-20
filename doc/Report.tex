@@ -164,16 +164,19 @@ The primary challenge was iterative hardware refinement. Initial breadboard conn
 % -----------------------------------------------------------------------------
 % SECTION 4: TESTING STRATEGY
 % -----------------------------------------------------------------------------
-\section{Testing Strategy}
-
-\subsection{Raspberry Pi and Extension Testing}
+\section{Raspberry Pi and Extension Testing Strategy}
 For our C-based "Guide Glove" extension, testing was performed directly on the Pi. After compiling with \texttt{gcc -lpigpio -lrt -lpthread}, we ran the executable and systematically presented objects at varying distances to the ultrasonic sensor. We verified: (1) accurate distance reporting to the terminal, (2) corresponding activation of the vibration motor, and (3) correct dynamic pitch and rhythm changes from the buzzer, including the distinct "danger zone" feedback. Iterative testing after hardware modifications (soldering, pin connections) was crucial to ensure component reliability.
 
-\subsection{Effectiveness of Testing}
-Our multi-faceted testing strategy, combining the provided test suite with custom-written assembly files for edge cases (e.g., negative branch offsets, zero-value immediates, instruction aliases), proved highly effective. The suite ensured specification compliance, while our targeted tests helped isolate specific issues. The hardware deployment for Part III served as a crucial end-to-end validation, leading to emulator enhancements for MMIO logging that improved our debugging capabilities for hardware-specific code. This comprehensive approach allowed us to identify and resolve most issues systematically.
+% -----------------------------------------------------------------------------
+% SECTION 5: Group Reflection
+% -----------------------------------------------------------------------------
+\section{Group Reflections}
+We used Slack as our main communication platform which provided useful productivity tools such as file sharing, task management, and communication channels. Our workload split allowed us to work independently and without much overlap after implementing the core files, which sped up the workflow immensely. At the start of the project we didn't have frequent in person meetings, however when we started using hardware we naturally had to meet up more to work on the project. We found that meeting more frequently reduced the number of conflicts and code duplications and improved overall workflow - so in the future we will try to meet as often as possible. 
+
+At the start we all agreed on the git conventions we would use for naming commits and branches etc. this proved to be very important in keeping our workflow clean and organised and knowing what each branch and commit does - preventing confusion between teammates.
 
 % -----------------------------------------------------------------------------
-% SECTION 5: INDIVIDUAL REFLECTIONS
+% SECTION 6: INDIVIDUAL REFLECTIONS
 % -----------------------------------------------------------------------------
 \section{Individual Reflections}
 \subsection{Reflection from Richard}
