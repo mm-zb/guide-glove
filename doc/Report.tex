@@ -59,6 +59,14 @@
     
 \end{titlepage}
 
+\newpage % Ensure title page is separate
+
+% -----------------------------------------------------------------------------
+% TABLE OF CONTENTS
+% -----------------------------------------------------------------------------
+\tableofcontents
+\newpage
+
 % -----------------------------------------------------------------------------
 % SECTION 1: ASSEMBLER IMPLEMENTATION
 % -----------------------------------------------------------------------------
@@ -175,25 +183,14 @@ The primary challenge was iterative hardware refinement. Initial breadboard conn
 % -----------------------------------------------------------------------------
 \section{Testing Strategy}
 
-\subsection{Assembler Testing}
-\todo{Describe how you tested the assembler. Did you use the provided test suite? Did you write your own unit tests or assembly files? Mention specific cases you focused on (e.g., forward/backward branches, all addressing modes, instruction aliases, edge cases).}
-
 \subsection{Raspberry Pi and Extension Testing}
 For our C-based "Guide Glove" extension, testing was performed directly on the Pi. After compiling with \texttt{gcc -lpigpio -lrt -lpthread}, we ran the executable and systematically presented objects at varying distances to the ultrasonic sensor. We verified: (1) accurate distance reporting to the terminal, (2) corresponding activation of the vibration motor, and (3) correct dynamic pitch and rhythm changes from the buzzer, including the distinct "danger zone" feedback. Iterative testing after hardware modifications (soldering, pin connections) was crucial to ensure component reliability.
 
 \subsection{Effectiveness of Testing}
 Our multi-faceted testing strategy, combining the provided test suite with custom-written assembly files for edge cases (e.g., negative branch offsets, zero-value immediates, instruction aliases), proved highly effective. The suite ensured specification compliance, while our targeted tests helped isolate specific issues. The hardware deployment for Part III served as a crucial end-to-end validation, leading to emulator enhancements for MMIO logging that improved our debugging capabilities for hardware-specific code. This comprehensive approach allowed us to identify and resolve most issues systematically.
 
-
 % -----------------------------------------------------------------------------
-% SECTION 5: GROUP REFLECTION
-% -----------------------------------------------------------------------------
-\section{Group Reflection}
-\todo{Write a reflection on your experience working as a group. Discuss your methods for communication (e.g., Discord, regular meetings) and for splitting up work (e.g., by feature, pair programming). Critically evaluate how effective these methods were. What would you keep the same for a future group project, and what would you do differently?}
-
-
-% -----------------------------------------------------------------------------
-% SECTION 6: INDIVIDUAL REFLECTIONS
+% SECTION 5: INDIVIDUAL REFLECTIONS
 % -----------------------------------------------------------------------------
 \section{Individual Reflections}
 \subsection{Reflection from Richard}
@@ -212,7 +209,7 @@ team members when writing code - to ensure that we don't accidentally overlap an
 mistake and it didn't occur again.
 
 \subsection{Reflection from Prasanna}
-My primary contributions included implementing the DP executor and register shifting for the emulator (Part 1), the branching logic for the assembler (Part 2), and contributing to the hardware implementation and testing for our Part 4 extension. I consistently aimed to produce well-commented, functional code, particularly for the assembler's branching. Initially, I recognized a weakness in my proactivity regarding group communication, testing, and peer reviews. However, I consciously worked to improve this, becoming more engaged during the extension phase. This project reinforced the value of rigorous Git practices and highlighted the importance of consistent team communication to prevent conflicts—a key area I will focus on more in future group work.
+My primary contributions included implementing the DP executor and register shifting for the emulator (Part 1), the branching logic for the assembler (Part 2), and contributing to the hardware implementation and testing for our Part 4 extension. I consistently aimed to produce well-commented, functional code, particularly for the assembler's branching. Initially, I recognized a weakness in my proactivity regarding group communication, testing, and peer reviews. However, I consciously worked to improve this, becoming more engaged during the extension phase. This project reinforced the value of rigorous Git practices and highlighted the importance of consistent team communication to prevent conflicts - a key area I will focus on more in future group work.
 
 \subsection{Reflection from Jai}
 As team leader, my role involved both project coordination and technical development. I was responsible for structuring our workflow by breaking down the 
