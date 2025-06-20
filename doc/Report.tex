@@ -122,12 +122,11 @@ After refactoring the DP assembler to work with the correct tokenizer, we fixed 
 
 \subsubsection{Data Transfer (LDR/STR) Instructions}
 The data transfer instructions were the most complex to implement due to their varied and flexible addressing modes. Our improved tokenizer was essential here. By examining the pattern of tokens - such as the presence of an exclamation mark for pre-indexing, or the number of tokens between the square brackets - we could reliably distinguish between the different addressing formats and call the correct assembly logic.
-For example, to identify the unsigned immediate offset addressing mode, we looking for the presence of a hashtag '#' within a pair of brackets. We could then confirm this was not a pre-indexed address due to the lack of an exclamation mark at the end of the address.
+For example, to identify the unsigned immediate offset addressing mode, we looking for the presence of a hashtag '\#' within a pair of brackets. We could then confirm this was not a pre-indexed address due to the lack of an exclamation mark at the end of the address.
 
 \subsubsection{Branch Instructions}
 The core logic for assembling branch instructions is the calculation of the branch offset from a label. The offset is calculated using the formula: \texttt{offset = (target\_address - current\_instruction\_address) / 4}. We ensured our implementation correctly handled this as a signed, 4-byte-aligned, word-based offset. The target address was retrieved from the symbol table built in the first pass. 
-\todo{Confirm that your code correctly handles the sign extension for the simm19 (B.cond) and simm26 (B) fields.}
-
+The C code correctly handles sign extension for the \texttt{simm19} (B.cond) and \texttt{simm26} (B) fields implicitly. When the word offset is calculated, if it's negative, the resulting \texttt{int32\_t} value naturally holds its two's complement form. Subsequent bitwise ANDing with the field-specific mask (e.g., \texttt{0x03FFFFFF} for \texttt{simm26}) correctly truncates this to the required bit width while preserving the sign for negative offsets.
 
 % -----------------------------------------------------------------------------
 % SECTION 2: RASPBERRY PI IMPLEMENTATION
@@ -157,23 +156,24 @@ In the end, we discovered that we were connecting the SD card to the Raspberry P
 we were plugging in the USB card reader into a USB port instead of the SD card itself into the SD card slot.
 After correcting this, the LED started blinking as expected.
 
-
 % -----------------------------------------------------------------------------
 % SECTION 3: THE EXTENSION
 % -----------------------------------------------------------------------------
 \section{The Extension}
 
 \subsection{Description and Goal}
-\todo{State the high-level purpose of your extension. What new capability did you add to the assembler or emulator? (e.g., support for floating-point instructions, a new pseudo-instruction, an interactive debugger feature, etc.)}
+Our extension, the "Guide Glove," aims to assist visually impaired individuals in navigating complex or confined spaces where a traditional cane might be cumbersome or less effective. By integrating an ultrasonic sensor, a buzzer, and a vibration motor with a Raspberry Pi, the glove provides real-time, multi-modal feedback about the proximity of nearby objects. The ultrasonic sensor measures the distance to surfaces in front of the hand, and this data is translated into varying intensities of haptic (vibration) and auditory (buzzer tone/frequency) feedback, which intensify as an object gets closer, thereby enhancing spatial awareness and user safety.
 
 \subsection{Design and Implementation}
-\todo{Describe how you designed and implemented the extension. What new data structures, parsing logic, or execution logic were required? How did it integrate with your existing assembler/emulator codebase?}
+The "Guide Glove" extension was realized as a C application on the Raspberry Pi, interfacing with an HC-SR04 ultrasonic sensor, a piezo buzzer, and a vibration motor, initially prototyped using a breadboard and necessary resistors. The program utilized the \texttt{pigpio} library for GPIO control.
+
+Core logic involved continuously reading a distance value (in cm, from a file populated by the sensor process) and translating this into synchronized feedback. Auditory feedback featured a dynamically pitched buzzer and a rhythmic beeping where the silent interval decreased with proximity. Haptic feedback mirrored this rhythm with the vibration motor. A critical "danger zone" (5cm) triggered constant, high-intensity sound and vibration. If no object was in range, outputs were silenced.
 
 \subsection{Example of Use}
-\todo{Provide a short, concrete example of your extension in action. This could be a snippet of assembly code that uses your new feature, a screenshot of your new emulator command, or a description of an input and its corresponding output. Explain what the example demonstrates.}
+The Guide Glove serves visually impaired users in two primary scenarios. Firstly, for general navigation in unfamiliar environments, such as a new restaurant, the user can orient the glove (e.g., sensor facing forward from the hand or near the head) to receive haptic and auditory warnings about approaching obstacles like walls or low-hanging objects, preventing collisions. Secondly, for close-proximity tasks, the user can employ a sweeping motion with the glove to locate specific items within a confined space, for instance, finding a mug in a cupboard without accidentally knocking over other objects, guided by the intensifying feedback.
 
 \subsection{Challenges and Learning}
-\todo{What was the most challenging part of implementing the extension? What key problems did you have to overcome? What did you learn from the process?}
+The primary challenge was iterative hardware refinement. Initial breadboard connections proved unreliable, prompting a move to soldered components on perfboard. This transition introduced new issues like wire breakages and misconnections, which were time-consuming to debug. Our key learning was the necessity of rigorous, incremental testing after each hardware modification to quickly isolate faults, which significantly improved our debugging efficiency and the final prototype's robustness.
 
 
 % -----------------------------------------------------------------------------
@@ -185,10 +185,10 @@ After correcting this, the LED started blinking as expected.
 \todo{Describe how you tested the assembler. Did you use the provided test suite? Did you write your own unit tests or assembly files? Mention specific cases you focused on (e.g., forward/backward branches, all addressing modes, instruction aliases, edge cases).}
 
 \subsection{Raspberry Pi and Extension Testing}
-\todo{Explain how you verified the correctness of your LED blinking program and your extension. For the Pi, describe the process of deploying and observing the result. For the extension, describe the specific tests you wrote or ran to ensure it worked as intended.}
+For our C-based "Guide Glove" extension, testing was performed directly on the Pi. After compiling with \texttt{gcc -lpigpio -lrt -lpthread}, we ran the executable and systematically presented objects at varying distances to the ultrasonic sensor. We verified: (1) accurate distance reporting to the terminal, (2) corresponding activation of the vibration motor, and (3) correct dynamic pitch and rhythm changes from the buzzer, including the distinct "danger zone" feedback. Iterative testing after hardware modifications (soldering, pin connections) was crucial to ensure component reliability.
 
 \subsection{Effectiveness of Testing}
-\todo{Discuss how effective you believe your testing strategy was. Did it catch most bugs early? Were there any classes of bugs that your tests missed? What would you do to improve your testing process in the future?}
+Our multi-faceted testing strategy, combining the provided test suite with custom-written assembly files for edge cases (e.g., negative branch offsets, zero-value immediates, instruction aliases), proved highly effective. The suite ensured specification compliance, while our targeted tests helped isolate specific issues. The hardware deployment for Part III served as a crucial end-to-end validation, leading to emulator enhancements for MMIO logging that improved our debugging capabilities for hardware-specific code. This comprehensive approach allowed us to identify and resolve most issues systematically.
 
 
 % -----------------------------------------------------------------------------
@@ -217,8 +217,8 @@ my work needed minimal changes during code reviews and testing. One thing that I
 team members when writing code - to ensure that we don't accidentally overlap and write the same code. This happened once in Pat I, and we learned from our 
 mistake and it didn't occur again.
 
-\subsection{Reflection from <Member Name 3>}
-\todo{Write at least one paragraph reflecting on your personal contribution and experience. Use feedback from your peer assessment. What were your strengths and weaknesses? How did this compare to your expectations? What would you do differently or continue to do when working in future groups?}
+\subsection{Reflection from Prasanna}
+My primary contributions included implementing the DP executor and register shifting for the emulator (Part 1), the branching logic for the assembler (Part 2), and contributing to the hardware implementation and testing for our Part 4 extension. I consistently aimed to produce well-commented, functional code, particularly for the assembler's branching. Initially, I recognized a weakness in my proactivity regarding group communication, testing, and peer reviews. However, I consciously worked to improve this, becoming more engaged during the extension phase. This project reinforced the value of rigorous Git practices and highlighted the importance of consistent team communication to prevent conflicts—a key area I will focus on more in future group work.
 
 \subsection{Reflection from <Member Name 4>}
 \todo{Write at least one paragraph reflecting on your personal contribution and experience. Use feedback from your peer assessment. What were your strengths and weaknesses? How did this compare to your expectations? What would you do differently or continue to do when working in future groups?}
