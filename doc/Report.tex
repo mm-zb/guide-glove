@@ -7,14 +7,6 @@
 \usepackage{graphicx} % For including images
 % \usepackage{listings} % Recommended for formatting code snippets
 
-% CUSTOM COMMANDS
-% A \todo command to leave notes for team members
-\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO: #1}}}
-
-% =============================================================================
-% DOCUMENT STARTS HERE
-% =============================================================================
-
 \begin{document}
 
 % -----------------------------------------------------------------------------
@@ -31,10 +23,7 @@
     {\LARGE Final Report\par}
     
     \vspace{0.5cm}
-    
-    % NOTE: The final report must be a maximum of 6 pages (6 A4 sides).
-    % Be concise in your descriptions.
-    
+   
     \vfill % Pushes the content below to the bottom
     
     {\Large Team 54\par}
@@ -60,12 +49,6 @@
 \end{titlepage}
 
 \newpage % Ensure title page is separate
-
-% -----------------------------------------------------------------------------
-% TABLE OF CONTENTS
-% -----------------------------------------------------------------------------
-\tableofcontents
-\newpage
 
 % -----------------------------------------------------------------------------
 % SECTION 1: ASSEMBLER IMPLEMENTATION
@@ -212,20 +195,9 @@ mistake and it didn't occur again.
 My primary contributions included implementing the DP executor and register shifting for the emulator (Part 1), the branching logic for the assembler (Part 2), and contributing to the hardware implementation and testing for our Part 4 extension. I consistently aimed to produce well-commented, functional code, particularly for the assembler's branching. Initially, I recognized a weakness in my proactivity regarding group communication, testing, and peer reviews. However, I consciously worked to improve this, becoming more engaged during the extension phase. This project reinforced the value of rigorous Git practices and highlighted the importance of consistent team communication to prevent conflicts - a key area I will focus on more in future group work.
 
 \subsection{Reflection from Jai}
-As team leader, my role involved both project coordination and technical development. I was responsible for structuring our workflow by breaking down the 
-main emulator and assembler tasks into manageable components for the team. My focus for the first two parts was to build the stable software foundation that 
-everyone else would depend on. This included implementing the central ARMState struct for the emulator and developing the two most critical utilities for the 
-assembler: a tokenizer and the hash-map based symbol table. Creating a clear pipeline for these modules was essential as they were on the project's main path, 
-enabling the team to work in parallel with minimal integration issues.
-
-
-For our extension, I was more involved with hardware and software co-design, writing the C control system for the sensor glove. My primary contribution here was 
-designing and tuning the non-linear feedback algorithm. I felt a simple linear response would be uninformative, so I developed a system that uses both variable 
-pitch and rhythm to create more intuitive user feedback. This was implemented using the pigpio C library to generate precise audio tones. I also worked with the 
-team on the physical prototyping, which included soldering the transistor circuits required to safely drive the motors from the GPIO pins.
-
-I believe my main strength was in creating these core systems, which helped structure our team's collaboration. The biggest challenge was moving from the 
-predictable software environment of the emulator to debugging the physical hardware, where a bug could be in the code, the wiring, or even the network 
-connection for SSH. This experience taught me the value of methodical, incremental testing, such as using a Python script to quickly validate a hardware 
-connection before committing to a full C implementation. Overall, the project provided a valuable view of systems engineering.
+As team leader, my main contributions were planning the project's structure and developing the core software architecture. I built the foundational components 
+for both the assembler and emulator, including the tokenizer and the symbol table that the team depended on. For our extension, I then wrote the C control 
+system for the sensor glove, designing the non-linear algorithm for its dynamic pitch and rhythm feedback. I believe my strength was in creating a stable 
+architectural foundation that allowed the team to work in parallel effectively. The greatest challenge was the shift from deterministic software emulation 
+to debugging the physical hardware, which taught me the value of methodical, incremental testing to isolate problems.
 \end{document}
