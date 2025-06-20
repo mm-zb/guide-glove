@@ -10,10 +10,6 @@
 #include "assemble_data_transfer.h"
 #include "assemble_dp.h"
 
-// TODO: EVERYONE 
-// --- TEMPORARY FORWARD DECLARATIONS FOR TEAMMATES' FUNCTIONS ---
-// They will implement these in their own files later
-
 void pass_one(const char* file_in, SymbolTable table);
 void pass_two(const char* file_in, const char* file_out, SymbolTable table);
 
@@ -153,7 +149,6 @@ void pass_two(const char* file_in, const char* file_out, SymbolTable table) {
         const char* mnemonic = instruction_tokens[0];
         uint32_t binary_word = 0;
         
-        // TODO: --- Integration Point for Team ---
         if (strcmp(mnemonic, ".int") == 0) {
             // Handle the .int directive directly here.
             // binary_word = (uint32_t)strtol(instruction_tokens[1], NULL, 0); // Base 0 auto-detects hex
