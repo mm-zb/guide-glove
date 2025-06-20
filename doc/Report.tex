@@ -112,7 +112,7 @@ and \texttt{get\_register\_number} to avoid duplicate code when converting regis
 
 We encountered a challenge of many tests failing which we traced back to the handling of tokens by the DP assembler. 
 The initial implementation assumed the first, less granular version of the tokenizer.
-After refactoring the DP assembler to work with the correct tokenizer, we fixed around 570 test cases, leaving only a few DP-unrelated tests failing.
+After refactoring the DP assembler to work with the correct tokenizer, we fixed around 570 DP-related test cases.
 
 \subsubsection{Data Transfer (LDR/STR) Instructions}
 The data transfer instructions were the most complex to implement due to their varied and flexible addressing modes. Our improved tokenizer was essential here. By examining the pattern of tokens - such as the presence of an exclamation mark for pre-indexing, or the number of tokens between the square brackets - we could reliably distinguish between the different addressing formats and call the correct assembly logic.
