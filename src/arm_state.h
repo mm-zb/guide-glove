@@ -28,8 +28,4 @@ void initialize_arm_state(ARMState* state);
 uint32_t read_word_from_memory(ARMState* state, uint32_t address);
 void write_word_to_memory(ARMState* state, uint32_t address, uint32_t value);
 
-// Might add basic get/set register functions here, or let others access directly
-// uint64_t get_register(ARMState* state, int reg_id);
-// void set_register(ARMState* state, int reg_id, uint64_t value);
-
 #endif
